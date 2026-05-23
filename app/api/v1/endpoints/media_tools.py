@@ -124,7 +124,7 @@ async def media_metadata(url: str = Form(...)) -> dict:
         ig = instagram_direct_fallback(url) if "instagram.com" in url.lower() else None
         if ig and ig.get("direct_url"):
             return {"title": ig["title"], "duration": None, "formats": [{"format_id": "direct", "ext": "mp4", "resolution": "Auto"}], "fallback_url": ig["direct_url"], "warning": "Extractor blocked. Using Instagram fallback mirror."}
-        return {"title": "Fallback Mode", "duration": None, "formats": [], "fallback_url": build_fallback_url(url), "warning": "Extractor failed. Using fallback download page."}
+        raise HTTPException(status_code=503, detail="Extractor blocked from current server IP. Please retry.")
 
 
 @router.post('/download')
@@ -144,7 +144,7 @@ async def media_download(url: str = Form(...), format_id: str | None = Form(defa
         yt = youtube_piped_fallback(url) if ("youtube.com" in url.lower() or "youtu.be" in url.lower()) else None
         ig = instagram_direct_fallback(url) if "instagram.com" in url.lower() else None
         fallback = tk["direct_url"] if tk else (yt["direct_url"] if yt and yt.get("direct_url") else (ig["direct_url"] if ig and ig.get("direct_url") else build_fallback_url(url)))
-        return JSONResponse(status_code=202, content={"fallback_url": fallback, "message": "Direct download blocked on this server IP. Use fallback URL below."})
+        raise HTTPException(status_code=503, detail="Download blocked from server IP. Retry later or use another network.")
 
 
 @router.post('/video-to-gif')

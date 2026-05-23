@@ -3,16 +3,18 @@ function renderMediaUI(slug) {
   if (!panel) return;
 
   const urlForm = `
-    <form id="mediaUrlForm" class="space-y-2">
+    <form id="mediaUrlForm" class="space-y-3">
       <input name="url" required placeholder="Paste video URL" class="w-full rounded border p-2 dark:bg-slate-800" />
-      <div class="flex gap-2 flex-wrap">
+      <div class="flex gap-2">
         <button id="fetchBtn" class="px-3 py-2 rounded bg-indigo-600 text-white" type="submit">Fetch Metadata</button>
         <button id="downloadBtn" class="px-3 py-2 rounded bg-emerald-600 text-white" type="button">Download</button>
-        <a id="fallbackBtn" href="#" target="_blank" class="px-3 py-2 rounded bg-amber-500 text-white hidden">Open Fallback</a>
       </div>
       <select id="formatSelect" class="w-full rounded border p-2 dark:bg-slate-800"><option value="">Best</option></select>
     </form>
-    <div class="text-xs"><a href="YOUR_MONETAG_DIRECT_LINK_HERE" target="_blank" class="underline">Sponsored Link</a></div>
+    <div id="mediaPreview" class="hidden rounded border p-3 bg-slate-50 dark:bg-slate-800">
+      <img id="mediaThumb" class="w-40 h-24 object-cover rounded mb-2" alt="thumbnail" />
+      <p id="mediaTitle" class="text-sm font-semibold"></p>
+    </div>
     <div id="mediaResult" class="text-xs bg-slate-100 dark:bg-slate-800 rounded p-2 whitespace-pre-wrap"></div>`;
 
   const uploadForm = (endpoint, label, extra='') => `
@@ -37,60 +39,55 @@ function wireHandlers() {
     const select = document.getElementById('formatSelect');
     const fetchBtn = document.getElementById('fetchBtn');
     const downloadBtn = document.getElementById('downloadBtn');
-    const fallbackBtn = document.getElementById('fallbackBtn');
-
-    function setFallback(url, message='Extractor blocked for this platform/IP. Use fallback.') {
-      fallbackBtn.href = url; fallbackBtn.textContent='Open Fallback';
-      fallbackBtn.classList.remove('hidden');
-      result.innerHTML = `${message}\nFallback URL:\n<a class='underline text-indigo-500 break-all' target='_blank' href='${url}'>${url}</a>`;
-    }
+    const preview = document.getElementById('mediaPreview');
+    const thumb = document.getElementById('mediaThumb');
+    const title = document.getElementById('mediaTitle');
 
     form.addEventListener('submit', async (e)=>{
       e.preventDefault();
       const fd = new FormData(form);
       fetchBtn.textContent='Fetching...'; fetchBtn.disabled=true;
-      fallbackBtn.classList.add('hidden');
+      result.textContent='';
       try {
         const r = await fetch('/api/v1/media/metadata',{method:'POST', body:fd});
         const data = await r.json();
         if (!r.ok) throw new Error(data.detail || 'Metadata error');
-
-        if (data.warning || !data.formats?.length) {
-          if (data.fallback_url) setFallback(data.fallback_url, data.warning || 'No formats available.');
-          else result.textContent = 'Metadata unavailable.';
-        } else {
-          result.textContent = JSON.stringify({title:data.title, duration:data.duration}, null, 2);
-          select.innerHTML = '<option value="">Best</option>' + (data.formats||[]).map(f=>`<option value="${f.format_id}">${f.resolution} (${f.ext})</option>`).join('');
-          if (data.fallback_url) { fallbackBtn.href=data.fallback_url; fallbackBtn.classList.remove('hidden'); }
-        }
+        title.textContent = data.title || 'Video';
+        if (data.thumbnail) { thumb.src = data.thumbnail; preview.classList.remove('hidden'); }
+        result.textContent = JSON.stringify({title:data.title, duration:data.duration}, null, 2);
+        select.innerHTML = '<option value="">Best</option>' + (data.formats||[]).map(f=>`<option value="${f.format_id}">${f.resolution} (${f.ext})</option>`).join('');
       } catch (err) {
         result.textContent = `Metadata failed: ${err.message}`;
       } finally { fetchBtn.textContent='Fetch Metadata'; fetchBtn.disabled=false; }
     });
 
     downloadBtn?.addEventListener('click', async ()=>{
-      window.open('YOUR_MONETAG_DIRECT_LINK_HERE','_blank');
       const fd = new FormData(form);
       fd.set('format_id', select.value);
       downloadBtn.textContent='Downloading...'; downloadBtn.disabled=true;
       try {
         const r = await fetch('/api/v1/media/download',{method:'POST', body:fd});
-        if (r.status===202){
-          const j=await r.json();
-          if (j.fallback_url) setFallback(j.fallback_url, j.message || 'Direct download blocked.');
-          return;
-        }
-        if (!r.ok) throw new Error('Download failed');
-        const blob=await r.blob(); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='video.mp4'; a.click();
-      } catch (e) {
-        result.textContent = `Download failed: ${e.message}`;
-      } finally { downloadBtn.textContent='Download'; downloadBtn.disabled=false; }
+        if (!r.ok) throw new Error('Network response was not ok');
+        const blob = await r.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display='none';
+        a.href=url;
+        a.download='MZ_Tools_Media.mp4';
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        a.remove();
+      } catch {
+        alert('Download execution failed. Please retry!');
+      } finally {
+        downloadBtn.textContent='Download'; downloadBtn.disabled=false;
+      }
     });
   }
 
   document.querySelectorAll('.mediaUploadForm').forEach((f)=>f.addEventListener('submit', async(e)=>{
     e.preventDefault();
-    window.open('YOUR_MONETAG_DIRECT_LINK_HERE','_blank');
     const btn = f.querySelector('button');
     btn.textContent='Processing...'; btn.disabled=true;
     const fd = new FormData(f);
