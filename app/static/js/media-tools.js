@@ -45,7 +45,7 @@ function wireHandlers(slug) {
         const r = await fetch('/api/v1/media/metadata',{method:'POST', body:fd});
         const data = await r.json();
         if (!r.ok) throw new Error(data.detail || 'Metadata error');
-        result.textContent = JSON.stringify({title:data.title, duration:data.duration}, null, 2);
+        result.textContent = JSON.stringify({title:data.title, duration:data.duration, warning:data.warning||null}, null, 2); if(data.fallback_url){result.innerHTML += `\nFallback URL: <a class='underline' target='_blank' href='${data.fallback_url}'>Open</a>`;}
         select.innerHTML = '<option value="">Best</option>' + (data.formats||[]).map(f=>`<option value="${f.format_id}">${f.resolution} (${f.ext})</option>`).join('');
       } catch (err) {
         result.innerHTML = `Metadata failed (${err.message}). Fallback: open source directly.\n<a class='underline' target='_blank' href='${fd.get('url')}'>Open Video URL</a>`;
@@ -59,6 +59,7 @@ function wireHandlers(slug) {
       downloadBtn.textContent='Downloading...'; downloadBtn.disabled=true;
       try {
         const r = await fetch('/api/v1/media/download',{method:'POST', body:fd});
+        if (r.status===202){const j=await r.json(); result.innerHTML=`${j.message} <a class='underline' target='_blank' href='${j.fallback_url}'>Open Fallback</a>`; return;}
         if (!r.ok) throw new Error('Download failed');
         const blob=await r.blob(); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='video.mp4'; a.click();
       } catch {

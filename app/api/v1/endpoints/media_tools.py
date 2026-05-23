@@ -3,10 +3,11 @@ from __future__ import annotations
 import random
 import subprocess
 from pathlib import Path
+from urllib.parse import quote_plus
 
 import yt_dlp
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
-from fastapi.responses import StreamingResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from yt_dlp.utils import DownloadError
 
 from app.services.media_service import MediaToolError, extract_mp3, video_to_gif
@@ -22,6 +23,18 @@ USER_AGENTS = [
 
 def ensure_ytdlp_updated() -> None:
     subprocess.run(["python", "-m", "pip", "install", "--upgrade", "yt-dlp"], check=False, capture_output=True)
+
+
+def build_fallback_url(url: str) -> str:
+    u = url.lower()
+    encoded = quote_plus(url)
+    if "tiktok.com" in u:
+        return f"https://www.tikwm.com/video/media/hdplay/{encoded}"
+    if "instagram.com" in u:
+        return f"https://snapinsta.app/?url={encoded}"
+    if "youtube.com" in u or "youtu.be" in u:
+        return f"https://cobalt.tools/?u={encoded}"
+    return url
 
 
 def _ydl_opts(download: bool = False, outtmpl: str | None = None, format_id: str | None = None) -> dict:
@@ -54,8 +67,8 @@ def _ydl_opts(download: bool = False, outtmpl: str | None = None, format_id: str
 
 def _translate_error(exc: Exception) -> HTTPException:
     msg = str(exc)
-    if "403" in msg or "Sign in to confirm" in msg:
-        return HTTPException(status_code=403, detail="Platform blocked automated access. Add valid cookies.txt and retry.")
+    if "403" in msg or "Sign in to confirm" in msg or "blocked" in msg.lower():
+        return HTTPException(status_code=403, detail="Platform blocked automated access from current IP.")
     if "Video unavailable" in msg:
         return HTTPException(status_code=400, detail="Video unavailable or removed.")
     return HTTPException(status_code=400, detail=f"Media processing failed: {msg}")
@@ -68,15 +81,13 @@ async def media_metadata(url: str = Form(...)) -> dict:
         with yt_dlp.YoutubeDL(_ydl_opts(download=False)) as ydl:
             info = ydl.extract_info(url, download=False)
         formats = [{"format_id": f.get("format_id"), "ext": f.get("ext"), "resolution": f.get("resolution") or f"{f.get('height', 'NA')}p"} for f in info.get("formats", []) if f.get("vcodec") != "none"]
-        return {"title": info.get("title"), "duration": info.get("duration"), "thumbnail": info.get("thumbnail"), "formats": formats[:25]}
-    except DownloadError as exc:
-        raise _translate_error(exc)
-    except Exception as exc:
-        raise _translate_error(exc)
+        return {"title": info.get("title"), "duration": info.get("duration"), "thumbnail": info.get("thumbnail"), "formats": formats[:25], "fallback_url": build_fallback_url(url)}
+    except Exception:
+        return {"title": "Fallback Mode", "duration": None, "thumbnail": None, "formats": [], "fallback_url": build_fallback_url(url), "warning": "Extractor failed. Using fallback download page."}
 
 
 @router.post('/download')
-async def media_download(url: str = Form(...), format_id: str | None = Form(default=None)) -> StreamingResponse:
+async def media_download(url: str = Form(...), format_id: str | None = Form(default=None)):
     ensure_ytdlp_updated()
     from tempfile import TemporaryDirectory
     try:
@@ -90,10 +101,8 @@ async def media_download(url: str = Form(...), format_id: str | None = Form(defa
                     fp = max(matches, key=lambda p: p.stat().st_mtime)
                 content = fp.read_bytes()
                 return StreamingResponse(iter([content]), media_type='application/octet-stream', headers={'Content-Disposition': f'attachment; filename="{fp.name}"'})
-    except DownloadError as exc:
-        raise _translate_error(exc)
-    except Exception as exc:
-        raise _translate_error(exc)
+    except Exception:
+        return JSONResponse(status_code=202, content={"fallback_url": build_fallback_url(url), "message": "Direct download blocked for this IP. Open fallback URL."})
 
 
 @router.post('/video-to-gif')
