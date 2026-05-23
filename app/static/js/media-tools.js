@@ -40,9 +40,9 @@ function wireHandlers() {
     const fallbackBtn = document.getElementById('fallbackBtn');
 
     function setFallback(url, message='Extractor blocked for this platform/IP. Use fallback.') {
-      fallbackBtn.href = url;
+      fallbackBtn.href = url; fallbackBtn.textContent='Open Fallback';
       fallbackBtn.classList.remove('hidden');
-      result.innerHTML = `${message}\nFallback URL: <a class='underline text-indigo-500' target='_blank' href='${url}'>${url}</a>`;
+      result.innerHTML = `${message}\nFallback URL:\n<a class='underline text-indigo-500 break-all' target='_blank' href='${url}'>${url}</a>`;
     }
 
     form.addEventListener('submit', async (e)=>{
