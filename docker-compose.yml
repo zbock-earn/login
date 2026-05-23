@@ -1,0 +1,10 @@
+version: '3.9'
+services:
+  web:
+    build: .
+    container_name: utility_tools_web
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./:/app
