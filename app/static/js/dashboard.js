@@ -11,7 +11,7 @@ function card(tool) {
   return `<a href="/tools/${tool.slug}" class="group block rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 hover:shadow-2xl transition hover:-translate-y-1">
     <div class="flex justify-between items-start gap-2">
       <p class="text-xs text-indigo-500 font-semibold">${tool.category}</p>
-      <div class="flex gap-1">${tool.premium ? '<span class="text-[10px] px-2 py-1 rounded bg-amber-100 text-amber-700">PRO</span>' : ''}</div>
+      <div class='text-[10px] px-2 py-1 rounded bg-emerald-100 text-emerald-700'>FREE</div>
     </div>
     <h3 class="text-lg font-bold mt-2 group-hover:text-indigo-500">${tool.name}</h3>
     <p class="text-xs mt-2 text-slate-500 dark:text-slate-400 line-clamp-2">${tool.description || ''}</p>
@@ -33,7 +33,7 @@ function renderStats() {
     <div class="rounded-xl p-4 border bg-white dark:bg-slate-900">Tools <p class="text-2xl font-bold">${allStats.total_tools}</p></div>
     <div class="rounded-xl p-4 border bg-white dark:bg-slate-900">Categories <p class="text-2xl font-bold">${allStats.total_categories}</p></div>
     <div class="rounded-xl p-4 border bg-white dark:bg-slate-900">Backend Tools <p class="text-2xl font-bold">${allStats.backend_supported}</p></div>
-    <div class="rounded-xl p-4 border bg-white dark:bg-slate-900">Premium <p class="text-2xl font-bold">${allStats.premium_tools}</p></div>`;
+    <div class="rounded-xl p-4 border bg-white dark:bg-slate-900">Free Tools <p class="text-2xl font-bold">${allStats.total_tools}</p></div>`;
 }
 
 function renderCards() {
