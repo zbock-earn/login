@@ -33,6 +33,7 @@
 <script src="/static/js/image-tools.js"></script>
 <script src="/static/js/pdf-tools.js"></script>
 <script src="/static/js/text-tools.js"></script>
+<script src="/static/js/calculator-tools.js"></script>
 <script type="module">
 import { InstantTools } from '/static/js/instant-tools.js';
 const input = document.getElementById('toolInput');
@@ -41,6 +42,7 @@ window.renderMediaUI?.(slug);
 window.renderImageUI?.(slug);
 window.renderPdfUI?.(slug);
 window.renderTextUI?.(slug);
+window.renderCalcUI?.(slug);
 const output = document.getElementById('toolOutput');
 document.querySelectorAll('[data-action]').forEach((btn)=>btn.addEventListener('click',()=>{
   const text = input.value || '';
