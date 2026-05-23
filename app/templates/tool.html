@@ -4,13 +4,40 @@
 <section class="grid lg:grid-cols-4 gap-6">
   <article class="lg:col-span-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 space-y-4">
     <h1 class="text-2xl font-bold" id="toolTitle">{{ slug.replace('-', ' ').title() }}</h1>
-    <p class="text-slate-600 dark:text-slate-300">Tool workspace boilerplate. Insert specific controls and result blocks here.</p>
-    <div id="toolApp" class="rounded-xl bg-slate-100 dark:bg-slate-800 p-4 min-h-[240px]"></div>
+    <p class="text-slate-600 dark:text-slate-300">SaaS-ready tool workspace with instant utilities and backend handoff sections.</p>
+    <div class="grid md:grid-cols-2 gap-4">
+      <textarea id="toolInput" class="w-full min-h-40 rounded-lg border dark:bg-slate-800 p-3" placeholder="Paste text to test instant tools..."></textarea>
+      <div id="toolOutput" class="rounded-lg border dark:bg-slate-800 p-3 text-sm">Output preview...</div>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      <button data-action="word" class="px-3 py-2 rounded bg-slate-200 dark:bg-slate-700">Word Counter</button>
+      <button data-action="case" class="px-3 py-2 rounded bg-slate-200 dark:bg-slate-700">Case Convert</button>
+      <button data-action="password" class="px-3 py-2 rounded bg-slate-200 dark:bg-slate-700">Generate Password</button>
+      <button data-action="base64e" class="px-3 py-2 rounded bg-slate-200 dark:bg-slate-700">Base64 Encode</button>
+      <button data-action="qr" class="px-3 py-2 rounded bg-slate-200 dark:bg-slate-700">QR URL</button>
+    </div>
+    <div id="backendPanel" class="rounded-xl border p-4 text-sm text-slate-500">Backend integrations (image compression/PDF merge/media jobs) should render forms here per tool slug.</div>
   </article>
-
   <aside class="space-y-4">
     <div id="ad-sidebar-1" class="rounded-xl border border-dashed border-slate-400 dark:border-slate-700 p-4 text-xs text-center">Ad Placeholder: Sidebar 300x250</div>
     <div id="ad-sidebar-2" class="rounded-xl border border-dashed border-slate-400 dark:border-slate-700 p-4 text-xs text-center">Ad Placeholder: Direct Link CTA</div>
+    <div id="ad-sidebar-3" class="rounded-xl border border-dashed border-slate-400 dark:border-slate-700 p-4 text-xs text-center">Ad Placeholder: Sticky Premium Promo</div>
   </aside>
 </section>
+{% endblock %}
+{% block scripts %}
+<script type="module">
+import { InstantTools } from '/static/js/instant-tools.js';
+const input = document.getElementById('toolInput');
+const output = document.getElementById('toolOutput');
+document.querySelectorAll('[data-action]').forEach((btn)=>btn.addEventListener('click',()=>{
+  const text = input.value || '';
+  const a = btn.dataset.action;
+  if(a==='word'){ const r=InstantTools.wordCounter(text); output.textContent=`Words: ${r.words} | Characters: ${r.chars}`; }
+  if(a==='case'){ const r=InstantTools.caseConverter(text); output.textContent=`UPPER:\n${r.upper}\n\nTITLE:\n${r.title}`; }
+  if(a==='password'){ output.textContent = InstantTools.passwordGenerator(20); }
+  if(a==='base64e'){ output.textContent = InstantTools.base64EncodeDecode(text, 'encode'); }
+  if(a==='qr'){ output.innerHTML = `<a class="text-indigo-500 underline" target="_blank" href="${InstantTools.qrCodeUrl(text || 'UtilityHub SaaS')}">Open QR Image</a>`; }
+}));
+</script>
 {% endblock %}

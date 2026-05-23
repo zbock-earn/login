@@ -1,33 +1,36 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en" class="dark scroll-smooth">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>{% block title %}All-in-One Utility Tools{% endblock %}</title>
+  <title>{% block title %}UtilityHub SaaS{% endblock %}</title>
   <script>
     if (localStorage.theme === 'light') document.documentElement.classList.remove('dark');
   </script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
-    tailwind.config = { darkMode: 'class' };
+    tailwind.config = { darkMode: 'class', theme: { extend: { colors: { brand: {500:'#6366f1',600:'#4f46e5'} }}} };
   </script>
 </head>
 <body class="bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100 min-h-screen">
+  <div class="bg-gradient-to-r from-brand-600 to-cyan-500 text-white text-center text-sm py-2">🚀 UtilityHub Pro — 55+ tools, team workspaces, API access, and analytics.</div>
   <header class="sticky top-0 z-50 bg-white/85 dark:bg-slate-900/85 backdrop-blur border-b border-slate-200 dark:border-slate-800">
     <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
-      <a href="/" class="font-bold text-xl">UtilityHub 55+</a>
-      <button id="themeToggle" class="px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700">Toggle Theme</button>
+      <a href="/" class="font-bold text-xl">UtilityHub SaaS</a>
+      <nav class="hidden md:flex gap-6 text-sm">
+        <a href="#features" class="hover:text-brand-500">Features</a><a href="#pricing" class="hover:text-brand-500">Pricing</a><a href="#ads" class="hover:text-brand-500">Ads</a>
+      </nav>
+      <div class="flex gap-2">
+        <button id="themeToggle" class="px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700">Toggle Theme</button>
+        <button class="px-4 py-2 rounded-lg bg-brand-600 text-white">Start Free</button>
+      </div>
     </div>
   </header>
-
   <main class="max-w-7xl mx-auto px-4 py-8">{% block content %}{% endblock %}</main>
-
-  <aside class="max-w-7xl mx-auto px-4 pb-10">
-    <section id="ad-banner-top" class="rounded-xl border border-dashed border-slate-400 dark:border-slate-700 p-6 text-center text-sm text-slate-500">
-      Ad Placeholder: Top Banner (safe zone for Monetag / display scripts)
-    </section>
+  <aside id="ads" class="max-w-7xl mx-auto px-4 pb-10 grid md:grid-cols-3 gap-4">
+    <section id="ad-banner-top" class="md:col-span-2 rounded-xl border border-dashed border-slate-400 dark:border-slate-700 p-6 text-center text-sm text-slate-500">Ad Placeholder: Top Banner / Direct Link Zone</section>
+    <section id="ad-cta-box" class="rounded-xl border border-dashed border-slate-400 dark:border-slate-700 p-6 text-center text-sm text-slate-500">Ad Placeholder: Sticky CTA Widget</section>
   </aside>
-
   <script src="/static/js/main.js"></script>
   {% block scripts %}{% endblock %}
 </body>

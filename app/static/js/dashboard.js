@@ -1,31 +1,36 @@
-const categories = {
-  "Media & Video Tools": ["YouTube Video Downloader", "TikTok Video Downloader", "Instagram Reel Downloader", "Video to GIF Converter", "Video Audio Extractor"],
-  "Image & Graphic Tools": ["Image Compressor", "Image Format Converter", "Image Resizer", "Image Cropper", "Background Remover", "Color Picker from Image", "Palette Generator", "Text to Image Placeholder Generator", "Image Blur/Sharpen Tool", "Base64 to Image & Vice Versa"],
-  "PDF & Document Tools": ["PDF Merger", "PDF Splitter", "PDF to Word Converter", "Word to PDF", "PDF Password Remover", "Image to PDF Converter", "EPUB to PDF Converter", "TXT to PDF"],
-  "Text & Content Tools": ["Case Converter", "Word & Character Counter", "Remove Duplicate Lines", "Text Reverser", "Lorem Ipsum Placeholder Generator", "Find and Replace Text", "URL Encoder / Decoder", "HTML Entity Encoder / Decoder", "Markdown to HTML Converter", "Text Diff Checker", "Slug Generator", "Binary to Text & Vice Versa"],
-  "Calculators & Converters": ["Currency Converter", "Age Calculator", "Percentage Calculator", "GST / Tax Calculator", "Loan / EMI Calculator", "Unit Converter", "Hex to RGB & RGB to Hex Converter", "Binary/Octal/Hexadecimal Converter", "Time Zone Converter", "Crypto Price Ticker / Converter"],
-  "Developer & Cyber Tools": ["Strong Password Generator", "QR Code Generator", "QR Code Scanner", "HTML Formatter / Minifier", "CSS Formatter / Minifier", "JSON Formatter / Validator", "User Agent Finder", "MD5 / SHA-256 Hash Generator", "IP Address Finder", "Website Ping / Status Checker"]
-};
-
-const allTools = Object.entries(categories).flatMap(([category, tools]) =>
-  tools.map((name) => ({ name, category, slug: name.toLowerCase().replace(/[^a-z0-9]+/g, '-') }))
-);
+let allTools = [];
+let activeCategory = 'All';
 
 const grid = document.getElementById('toolsGrid');
 const search = document.getElementById('toolSearch');
+const pills = document.getElementById('categoryPills');
 
-function renderCards(list) {
-  grid.innerHTML = list.map((tool) => `
-    <a href="/tools/${tool.slug}" class="block rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 hover:shadow-lg">
-      <p class="text-xs text-indigo-500 font-semibold">${tool.category}</p>
-      <h3 class="text-lg font-bold mt-1">${tool.name}</h3>
-    </a>
-  `).join('');
+function card(tool) {
+  return `<a href="/tools/${tool.slug}" class="block rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 hover:shadow-xl transition">
+    <div class="flex justify-between items-start gap-2"><p class="text-xs text-indigo-500 font-semibold">${tool.category}</p>${tool.premium ? '<span class="text-[10px] px-2 py-1 rounded bg-amber-100 text-amber-700">PRO</span>' : ''}</div>
+    <h3 class="text-lg font-bold mt-1">${tool.name}</h3>
+    <p class="text-xs mt-2 ${tool.backend_supported ? 'text-emerald-500':'text-slate-400'}">${tool.backend_supported ? 'Backend-powered' : 'Instant in-browser'}</p>
+  </a>`;
 }
 
-search?.addEventListener('input', (e) => {
-  const q = e.target.value.toLowerCase();
-  renderCards(allTools.filter((t) => t.name.toLowerCase().includes(q) || t.category.toLowerCase().includes(q)));
-});
+function renderCategories(categories) {
+  pills.innerHTML = ['All', ...categories].map(c => `<button class="px-3 py-1 rounded-full border text-sm ${c===activeCategory?'bg-indigo-600 text-white border-indigo-600':'border-slate-300 dark:border-slate-700'}" data-cat="${c}">${c}</button>`).join('');
+  pills.querySelectorAll('button').forEach((btn) => btn.addEventListener('click', () => {activeCategory = btn.dataset.cat; renderCards(); renderCategories(categories);}));
+}
 
-renderCards(allTools);
+function renderCards() {
+  const q = (search?.value || '').toLowerCase();
+  const list = allTools.filter((t) => (activeCategory === 'All' || t.category === activeCategory) && (`${t.name} ${t.category}`.toLowerCase().includes(q)));
+  grid.innerHTML = list.map(card).join('');
+}
+
+search?.addEventListener('input', renderCards);
+
+fetch('/api/v1/tools/catalog').then(r => r.json()).then((data) => {
+  const categories = data.map(c => c.category);
+  allTools = data.flatMap(c => c.tools);
+  renderCategories(categories);
+  renderCards();
+}).catch(() => {
+  grid.innerHTML = '<p class="text-red-500">Unable to load tool catalog.</p>';
+});
