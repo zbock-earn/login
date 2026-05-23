@@ -15,6 +15,9 @@
       <button data-action="password" class="px-3 py-2 rounded bg-slate-200 dark:bg-slate-700">Generate Password</button>
       <button data-action="base64e" class="px-3 py-2 rounded bg-slate-200 dark:bg-slate-700">Base64 Encode</button>
       <button data-action="qr" class="px-3 py-2 rounded bg-slate-200 dark:bg-slate-700">QR URL</button>
+          <button data-action="reverse" class="px-3 py-2 rounded bg-slate-200 dark:bg-slate-700">Text Reverse</button>
+      <button data-action="slug" class="px-3 py-2 rounded bg-slate-200 dark:bg-slate-700">Slug</button>
+      <button data-action="dedupe" class="px-3 py-2 rounded bg-slate-200 dark:bg-slate-700">Remove Duplicates</button>
     </div>
     <div id="backendPanel" class="rounded-xl border p-4 text-sm text-slate-500">Backend integrations (image compression/PDF merge/media jobs) should render forms here per tool slug.</div>
   </article>
@@ -38,6 +41,9 @@ document.querySelectorAll('[data-action]').forEach((btn)=>btn.addEventListener('
   if(a==='password'){ output.textContent = InstantTools.passwordGenerator(20); }
   if(a==='base64e'){ output.textContent = InstantTools.base64EncodeDecode(text, 'encode'); }
   if(a==='qr'){ output.innerHTML = `<a class="text-indigo-500 underline" target="_blank" href="${InstantTools.qrCodeUrl(text || 'UtilityHub SaaS')}">Open QR Image</a>`; }
+  if(a==='reverse'){ output.textContent = InstantTools.textReverser(text); }
+  if(a==='slug'){ output.textContent = InstantTools.slugGenerator(text); }
+  if(a==='dedupe'){ output.textContent = InstantTools.duplicateLineRemover(text); }
 }));
 </script>
 {% endblock %}

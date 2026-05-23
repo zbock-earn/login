@@ -18,51 +18,87 @@ def slugify(name: str) -> str:
     return "-".join("".join(ch.lower() if ch.isalnum() else " " for ch in name).split())
 
 
-def _catalog_source() -> dict[str, list[str]]:
+def _tool_definitions() -> dict[str, list[dict]]:
     return {
         "Media & Video Tools": [
-            "YouTube Video Downloader", "TikTok Video Downloader", "Instagram Reel Downloader", "Video to GIF Converter", "Video Audio Extractor (MP4 to MP3)"
+            {"name": "YouTube Video Downloader", "backend": True, "premium": True, "tags": ["youtube", "video", "download"], "description": "Download YouTube videos using backend worker scripts."},
+            {"name": "TikTok Video Downloader (Without Watermark)", "backend": True, "premium": True, "tags": ["tiktok", "download"], "description": "Download TikTok videos without watermark support."},
+            {"name": "Instagram Reel Downloader", "backend": True, "premium": True, "tags": ["instagram", "reels"], "description": "Fetch and download Instagram reels in optimized quality."},
+            {"name": "Video to GIF Converter", "backend": True, "premium": False, "tags": ["video", "gif", "convert"], "description": "Convert MP4/WebM clips into animated GIF output."},
+            {"name": "Video Audio Extractor (MP4 to MP3)", "backend": True, "premium": False, "tags": ["video", "audio", "mp3"], "description": "Extract MP3 audio tracks from uploaded MP4 files."},
         ],
         "Image & Graphic Tools": [
-            "Image Compressor", "Image Format Converter", "Image Resizer", "Image Cropper", "Background Remover", "Color Picker from Image", "Palette Generator", "Text to Image Placeholder Generator", "Image Blur/Sharpen Tool", "Base64 to Image & Vice Versa"
+            {"name": "Image Compressor (JPEG/PNG size reducer)", "backend": True, "premium": False, "tags": ["image", "compress"]},
+            {"name": "Image Format Converter (PNG to WebP, JPG to PNG, etc.)", "backend": True, "premium": False, "tags": ["image", "format", "convert"]},
+            {"name": "Image Resizer (Width/Height editor)", "backend": True, "premium": False, "tags": ["image", "resize"]},
+            {"name": "Image Cropper", "backend": True, "premium": False, "tags": ["image", "crop"]},
+            {"name": "Background Remover (using free API integration)", "backend": True, "premium": True, "tags": ["image", "ai", "background"]},
+            {"name": "Color Picker from Image", "backend": False, "premium": False, "tags": ["color", "image"]},
+            {"name": "Palette Generator", "backend": False, "premium": False, "tags": ["palette", "design"]},
+            {"name": "Text to Image Placeholder Generator", "backend": False, "premium": False, "tags": ["placeholder", "image"]},
+            {"name": "Image Blur/Sharpen Tool", "backend": True, "premium": False, "tags": ["image", "blur", "sharpen"]},
+            {"name": "Base64 to Image & Vice Versa", "backend": False, "premium": False, "tags": ["base64", "image"]},
         ],
         "PDF & Document Tools": [
-            "PDF Merger", "PDF Splitter", "PDF to Word Converter", "Word to PDF", "PDF Password Remover", "Image to PDF Converter", "EPUB to PDF Converter", "TXT to PDF"
+            {"name": "PDF Merger (Combine multiple PDFs)", "backend": True, "premium": False, "tags": ["pdf", "merge"]},
+            {"name": "PDF Splitter", "backend": True, "premium": False, "tags": ["pdf", "split"]},
+            {"name": "PDF to Word Converter (Simple text extraction)", "backend": True, "premium": False, "tags": ["pdf", "word"]},
+            {"name": "Word to PDF", "backend": True, "premium": False, "tags": ["word", "pdf"]},
+            {"name": "PDF Password Remover", "backend": True, "premium": True, "tags": ["pdf", "security"]},
+            {"name": "Image to PDF Converter", "backend": True, "premium": False, "tags": ["image", "pdf"]},
+            {"name": "EPUB to PDF Converter", "backend": True, "premium": True, "tags": ["epub", "pdf"]},
+            {"name": "TXT to PDF", "backend": True, "premium": False, "tags": ["txt", "pdf"]},
         ],
         "Text & Content Tools": [
-            "Case Converter", "Word & Character Counter", "Remove Duplicate Lines", "Text Reverser", "Lorem Ipsum Placeholder Generator", "Find and Replace Text", "URL Encoder / Decoder", "HTML Entity Encoder / Decoder", "Markdown to HTML Converter", "Text Diff Checker", "Slug Generator", "Binary to Text & Vice Versa"
+            {"name": "Case Converter (UPPERCASE, lowercase, Title Case)", "backend": False, "premium": False, "tags": ["text", "case"]},
+            {"name": "Word & Character Counter", "backend": False, "premium": False, "tags": ["text", "counter"]},
+            {"name": "Remove Duplicate Lines", "backend": False, "premium": False, "tags": ["text", "cleanup"]},
+            {"name": "Text Reverser", "backend": False, "premium": False, "tags": ["text", "reverse"]},
+            {"name": "Lorem Ipsum Placeholder Generator", "backend": False, "premium": False, "tags": ["lorem", "placeholder"]},
+            {"name": "Find and Replace Text", "backend": False, "premium": False, "tags": ["text", "replace"]},
+            {"name": "URL Encoder / Decoder", "backend": False, "premium": False, "tags": ["url", "encode"]},
+            {"name": "HTML Entity Encoder / Decoder", "backend": False, "premium": False, "tags": ["html", "encode"]},
+            {"name": "Markdown to HTML Converter", "backend": False, "premium": False, "tags": ["markdown", "html"]},
+            {"name": "Text Diff Checker (Compare two texts)", "backend": False, "premium": False, "tags": ["diff", "compare"]},
+            {"name": "Slug Generator (Text to URL-friendly-slug)", "backend": False, "premium": False, "tags": ["slug", "seo"]},
+            {"name": "Binary to Text & Vice Versa", "backend": False, "premium": False, "tags": ["binary", "text"]},
         ],
         "Calculators & Converters": [
-            "Currency Converter", "Age Calculator", "Percentage Calculator", "GST / Tax Calculator", "Loan / EMI Calculator", "Unit Converter", "Hex to RGB & RGB to Hex Converter", "Binary/Octal/Hexadecimal Converter", "Time Zone Converter", "Crypto Price Ticker / Converter"
+            {"name": "Currency Converter (Live API integration)", "backend": True, "premium": True, "tags": ["currency", "api"]},
+            {"name": "Age Calculator (Date of birth to exact age)", "backend": False, "premium": False, "tags": ["age", "date"]},
+            {"name": "Percentage Calculator", "backend": False, "premium": False, "tags": ["percentage", "math"]},
+            {"name": "GST / Tax Calculator", "backend": False, "premium": False, "tags": ["gst", "tax"]},
+            {"name": "Loan / EMI Calculator", "backend": False, "premium": False, "tags": ["loan", "emi"]},
+            {"name": "Unit Converter (Length, Weight, Temperature, Speed)", "backend": False, "premium": False, "tags": ["unit", "convert"]},
+            {"name": "Hex to RGB & RGB to Hex Converter", "backend": False, "premium": False, "tags": ["hex", "rgb"]},
+            {"name": "Binary/Octal/Hexadecimal Converter", "backend": False, "premium": False, "tags": ["binary", "octal", "hex"]},
+            {"name": "Time Zone Converter", "backend": False, "premium": False, "tags": ["time", "timezone"]},
+            {"name": "Crypto Price Ticker / Converter", "backend": True, "premium": True, "tags": ["crypto", "ticker"]},
         ],
         "Developer & Cyber Tools": [
-            "Strong Password Generator", "QR Code Generator", "QR Code Scanner", "HTML Formatter / Minifier", "CSS Formatter / Minifier", "JSON Formatter / Validator", "User Agent Finder", "MD5 / SHA-256 Hash Generator", "IP Address Finder", "Website Ping / Status Checker"
+            {"name": "Strong Password Generator", "backend": False, "premium": False, "tags": ["password", "security"]},
+            {"name": "QR Code Generator (with download option)", "backend": False, "premium": False, "tags": ["qr", "generator"]},
+            {"name": "QR Code Scanner (using web camera)", "backend": False, "premium": False, "tags": ["qr", "scanner"]},
+            {"name": "HTML Formatter / Minifier", "backend": False, "premium": False, "tags": ["html", "formatter"]},
+            {"name": "CSS Formatter / Minifier", "backend": False, "premium": False, "tags": ["css", "formatter"]},
+            {"name": "JSON Formatter / Validator", "backend": False, "premium": False, "tags": ["json", "validator"]},
+            {"name": "User Agent Finder", "backend": False, "premium": False, "tags": ["useragent", "browser"]},
+            {"name": "MD5 / SHA-256 Hash Generator", "backend": False, "premium": False, "tags": ["md5", "sha256", "hash"]},
+            {"name": "IP Address Finder (Shows user's public IP)", "backend": True, "premium": False, "tags": ["ip", "network"]},
+            {"name": "Website Ping / Status Checker", "backend": True, "premium": True, "tags": ["ping", "status"]},
         ],
     }
 
 
 def get_catalog() -> list[ToolCategory]:
-    data = _catalog_source()
-    backend_tools = {
-        "Image Compressor", "PDF Merger", "Video to GIF Converter", "Video Audio Extractor (MP4 to MP3)",
-        "Image Format Converter", "Image Resizer", "PDF Splitter", "Image to PDF Converter", "Website Ping / Status Checker"
-    }
-    premium_tools = {
-        "Background Remover", "Website Ping / Status Checker", "Currency Converter", "Crypto Price Ticker / Converter",
-        "YouTube Video Downloader", "TikTok Video Downloader", "Instagram Reel Downloader"
-    }
-
     categories: list[ToolCategory] = []
-    for category, tools in data.items():
+    for category, tools in _tool_definitions().items():
         items = [
             ToolItem(
-                name=t,
-                category=category,
-                slug=slugify(t),
-                backend_supported=t in backend_tools,
-                premium=t in premium_tools,
-            )
-            for t in tools
+                name=t["name"], category=category, slug=slugify(t["name"]),
+                description=t.get("description", f"{t['name']} utility for {category.lower()} workflows."),
+                backend_supported=t.get("backend", False), premium=t.get("premium", False), tags=t.get("tags", [])
+            ) for t in tools
         ]
         categories.append(ToolCategory(category=category, tools=items))
     return categories
@@ -70,19 +106,9 @@ def get_catalog() -> list[ToolCategory]:
 
 def get_catalog_metrics(categories: list[ToolCategory]) -> CatalogMetrics:
     flattened = [tool for cat in categories for tool in cat.tools]
-    return CatalogMetrics(
-        total_tools=len(flattened),
-        total_categories=len(categories),
-        backend_supported=sum(tool.backend_supported for tool in flattened),
-        premium_tools=sum(tool.premium for tool in flattened),
-    )
+    return CatalogMetrics(len(flattened), len(categories), sum(t.backend_supported for t in flattened), sum(t.premium for t in flattened))
 
 
 def get_tag_frequencies(categories: list[ToolCategory]) -> dict[str, int]:
-    counter: Counter[str] = Counter()
-    for category in categories:
-        for tool in category.tools:
-            for token in tool.name.lower().replace("/", " ").replace("&", " ").split():
-                if len(token) >= 4:
-                    counter[token] += 1
-    return dict(counter.most_common(20))
+    counter: Counter[str] = Counter(tag for c in categories for t in c.tools for tag in t.tags)
+    return dict(counter.most_common(25))

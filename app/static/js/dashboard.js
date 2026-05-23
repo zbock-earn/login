@@ -14,6 +14,7 @@ function card(tool) {
       <div class="flex gap-1">${tool.premium ? '<span class="text-[10px] px-2 py-1 rounded bg-amber-100 text-amber-700">PRO</span>' : ''}</div>
     </div>
     <h3 class="text-lg font-bold mt-2 group-hover:text-indigo-500">${tool.name}</h3>
+    <p class="text-xs mt-2 text-slate-500 dark:text-slate-400 line-clamp-2">${tool.description || ''}</p>
     <div class="mt-3 flex items-center justify-between text-xs">
       <span class="${tool.backend_supported ? 'text-emerald-500':'text-slate-400'}">${tool.backend_supported ? 'Backend-powered' : 'Instant in-browser'}</span>
       <span class="text-slate-400">Open tool →</span>
@@ -37,7 +38,7 @@ function renderStats() {
 
 function renderCards() {
   const q = (search?.value || '').toLowerCase();
-  const list = allTools.filter((t) => (activeCategory === 'All' || t.category === activeCategory) && (`${t.name} ${t.category}`.toLowerCase().includes(q)));
+  const list = allTools.filter((t) => (activeCategory === 'All' || t.category === activeCategory) && (`${t.name} ${t.category} ${(t.tags||[]).join(' ')}`.toLowerCase().includes(q)));
   grid.innerHTML = list.map(card).join('');
 }
 
