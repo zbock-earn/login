@@ -11,3 +11,4 @@ moviepy==2.2.1
 imageio==2.37.0
 imageio-ffmpeg==0.6.0
 pillow-avif-plugin==1.5.2
+reportlab==4.4.1
