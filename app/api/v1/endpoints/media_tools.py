@@ -45,6 +45,20 @@ def tiktok_direct(url: str) -> dict | None:
     return None
 
 
+
+
+def youtube_piped_fallback(url: str) -> dict | None:
+    try:
+        vid = url.split('v=')[-1].split('&')[0] if 'v=' in url else url.rsplit('/',1)[-1]
+        data = _fetch_json(f"https://piped.video/api/v1/streams/{vid}")
+        streams = data.get("videoStreams") or []
+        if streams:
+            best = streams[0]
+            return {"title": data.get("title") or "YouTube video", "direct_url": best.get("url")}
+    except Exception:
+        return None
+    return None
+
 def build_fallback_url(url: str) -> str:
     u = url.lower()
     if "tiktok.com" in u:
@@ -52,7 +66,7 @@ def build_fallback_url(url: str) -> str:
     if "instagram.com" in u:
         return url.replace("https://www.instagram.com", "https://www.ddinstagram.com")
     if "youtube.com" in u or "youtu.be" in u:
-        return f"https://cobalt.tools/?u={quote_plus(url)}"
+        return f"https://piped.video/watch?v={quote_plus(url)}"
     return url
 
 
@@ -94,6 +108,9 @@ async def media_metadata(url: str = Form(...)) -> dict:
         tk = tiktok_direct(url) if "tiktok.com" in url.lower() else None
         if tk:
             return {"title": tk["title"], "duration": None, "formats": [{"format_id": "direct", "ext": "mp4", "resolution": "HD"}], "fallback_url": tk["direct_url"], "warning": "Extractor blocked. Using direct TikTok fallback stream."}
+        yt = youtube_piped_fallback(url) if ("youtube.com" in url.lower() or "youtu.be" in url.lower()) else None
+        if yt and yt.get("direct_url"):
+            return {"title": yt["title"], "duration": None, "formats": [{"format_id": "direct", "ext": "mp4", "resolution": "Auto"}], "fallback_url": yt["direct_url"], "warning": "Extractor blocked. Using direct YouTube fallback stream."}
         return {"title": "Fallback Mode", "duration": None, "formats": [], "fallback_url": build_fallback_url(url), "warning": "Extractor failed. Using fallback download page."}
 
 
@@ -111,7 +128,8 @@ async def media_download(url: str = Form(...), format_id: str | None = Form(defa
                 return StreamingResponse(iter([fp.read_bytes()]), media_type='application/octet-stream', headers={'Content-Disposition': f'attachment; filename="{fp.name}"'})
     except Exception:
         tk = tiktok_direct(url) if "tiktok.com" in url.lower() else None
-        fallback = tk["direct_url"] if tk else build_fallback_url(url)
+        yt = youtube_piped_fallback(url) if ("youtube.com" in url.lower() or "youtu.be" in url.lower()) else None
+        fallback = tk["direct_url"] if tk else (yt["direct_url"] if yt and yt.get("direct_url") else build_fallback_url(url))
         return JSONResponse(status_code=202, content={"fallback_url": fallback, "message": "Direct download blocked on this server IP. Use fallback URL below."})
 
 
