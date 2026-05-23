@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import random
 import subprocess
 from pathlib import Path
@@ -17,7 +18,7 @@ from app.services.media_service import MediaToolError, extract_mp3, video_to_gif
 router = APIRouter()
 
 USER_AGENTS = [
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124.0 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 13_6) AppleWebKit/605.1.15 Version/17.3 Safari/605.1.15",
     "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/123.0 Safari/537.36",
 ]
@@ -45,11 +46,9 @@ def tiktok_direct(url: str) -> dict | None:
     return None
 
 
-
-
 def youtube_piped_fallback(url: str) -> dict | None:
     try:
-        vid = url.split('v=')[-1].split('&')[0] if 'v=' in url else url.rsplit('/',1)[-1]
+        vid = url.split("v=")[-1].split("&")[0] if "v=" in url else url.rsplit("/", 1)[-1]
         data = _fetch_json(f"https://piped.video/api/v1/streams/{vid}")
         streams = data.get("videoStreams") or []
         if streams:
@@ -60,14 +59,13 @@ def youtube_piped_fallback(url: str) -> dict | None:
     return None
 
 
-
 def instagram_direct_fallback(url: str) -> dict | None:
     try:
-        # lightweight no-auth mirror fallback that often exposes reel media page faster
         direct = url.replace("https://www.instagram.com", "https://www.ddinstagram.com")
         return {"title": "Instagram Reel", "direct_url": direct}
     except Exception:
         return None
+
 
 def build_fallback_url(url: str) -> str:
     u = url.lower()
@@ -78,6 +76,16 @@ def build_fallback_url(url: str) -> str:
     if "youtube.com" in u or "youtu.be" in u:
         return f"https://piped.video/watch?v={quote_plus(url)}"
     return url
+
+
+def _resolve_cookiefile() -> str | None:
+    file_path = Path("/workspace/login/cookies.txt")
+    if file_path.exists():
+        return str(file_path)
+    env_path = os.getenv("YT_COOKIES_FILE")
+    if env_path and Path(env_path).exists():
+        return env_path
+    return None
 
 
 def _ydl_opts(download: bool = False, outtmpl: str | None = None, format_id: str | None = None) -> dict:
@@ -91,19 +99,28 @@ def _ydl_opts(download: bool = False, outtmpl: str | None = None, format_id: str
         "geo_bypass": True,
         "ignoreerrors": False,
         "restrictfilenames": True,
-        "retries": 2,
+        "retries": 3,
+        "socket_timeout": 20,
+        "extractor_retries": 3,
         "http_headers": {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+            "User-Agent": random.choice(USER_AGENTS),
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
             "Accept-Language": "en-US,en;q=0.5",
         },
+        "extractor_args": {
+            "youtube": {"player_client": ["android", "web", "mweb"]},
+        },
     }
-    cookies = Path("/workspace/login/cookies.txt")
-    if cookies.exists():
-        opts["cookiefile"] = str(cookies)
+    cookiefile = _resolve_cookiefile()
+    if cookiefile:
+        opts["cookiefile"] = cookiefile
     if download:
         opts.update({"outtmpl": outtmpl, "format": format_id or "bestvideo+bestaudio/best", "merge_output_format": "mp4"})
     return opts
+
+
+def _youtube_auth_hint() -> str:
+    return "YouTube blocked this server IP/session. Add valid cookies.txt (or YT_COOKIES_FILE env) and retry."
 
 
 @router.post('/metadata')
@@ -113,18 +130,22 @@ async def media_metadata(url: str = Form(...)) -> dict:
         with yt_dlp.YoutubeDL(_ydl_opts(download=False)) as ydl:
             info = ydl.extract_info(url, download=False)
         formats = [{"format_id": f.get("format_id"), "ext": f.get("ext"), "resolution": f.get("resolution") or f"{f.get('height', 'NA')}p"} for f in info.get("formats", []) if f.get("vcodec") != "none"]
-        return {"title": info.get("title"), "duration": info.get("duration"), "thumbnail": info.get("thumbnail"), "formats": formats[:25], "fallback_url": build_fallback_url(url)}
-    except Exception:
+        return {"title": info.get("title"), "duration": info.get("duration"), "thumbnail": info.get("thumbnail"), "formats": formats[:25]}
+    except Exception as exc:
+        low = str(exc).lower()
+        if "youtube" in url.lower() and ("sign in to confirm" in low or "not a bot" in low):
+            yt = youtube_piped_fallback(url)
+            if yt and yt.get("direct_url"):
+                return {"title": yt["title"], "duration": None, "formats": [{"format_id": "direct", "ext": "mp4", "resolution": "Auto"}], "warning": _youtube_auth_hint()}
+            raise HTTPException(status_code=503, detail=_youtube_auth_hint()) from exc
+
         tk = tiktok_direct(url) if "tiktok.com" in url.lower() else None
         if tk:
-            return {"title": tk["title"], "duration": None, "formats": [{"format_id": "direct", "ext": "mp4", "resolution": "HD"}], "fallback_url": tk["direct_url"], "warning": "Extractor blocked. Using direct TikTok fallback stream."}
-        yt = youtube_piped_fallback(url) if ("youtube.com" in url.lower() or "youtu.be" in url.lower()) else None
-        if yt and yt.get("direct_url"):
-            return {"title": yt["title"], "duration": None, "formats": [{"format_id": "direct", "ext": "mp4", "resolution": "Auto"}], "fallback_url": yt["direct_url"], "warning": "Extractor blocked. Using direct YouTube fallback stream."}
+            return {"title": tk["title"], "duration": None, "formats": [{"format_id": "direct", "ext": "mp4", "resolution": "HD"}], "warning": "Extractor blocked. Using direct TikTok fallback stream."}
         ig = instagram_direct_fallback(url) if "instagram.com" in url.lower() else None
-        if ig and ig.get("direct_url"):
-            return {"title": ig["title"], "duration": None, "formats": [{"format_id": "direct", "ext": "mp4", "resolution": "Auto"}], "fallback_url": ig["direct_url"], "warning": "Extractor blocked. Using Instagram fallback mirror."}
-        raise HTTPException(status_code=503, detail="Extractor blocked from current server IP. Please retry.")
+        if ig:
+            return {"title": ig["title"], "duration": None, "formats": [{"format_id": "direct", "ext": "mp4", "resolution": "Auto"}], "warning": "Extractor blocked. Using Instagram fallback mirror."}
+        raise HTTPException(status_code=503, detail="Extractor blocked from current server IP. Please retry.") from exc
 
 
 @router.post('/download')
@@ -139,12 +160,19 @@ async def media_download(url: str = Form(...), format_id: str | None = Form(defa
                 if not fp.exists():
                     fp = max(Path(tmp).glob("*"), key=lambda p: p.stat().st_mtime)
                 return StreamingResponse(iter([fp.read_bytes()]), media_type='application/octet-stream', headers={'Content-Disposition': f'attachment; filename="{fp.name}"'})
-    except Exception:
+    except Exception as exc:
+        low = str(exc).lower()
+        if "youtube" in url.lower() and ("sign in to confirm" in low or "not a bot" in low):
+            yt = youtube_piped_fallback(url)
+            if yt and yt.get("direct_url"):
+                return JSONResponse(status_code=202, content={"fallback_url": yt["direct_url"], "message": _youtube_auth_hint()})
+            raise HTTPException(status_code=503, detail=_youtube_auth_hint()) from exc
+
         tk = tiktok_direct(url) if "tiktok.com" in url.lower() else None
         yt = youtube_piped_fallback(url) if ("youtube.com" in url.lower() or "youtu.be" in url.lower()) else None
         ig = instagram_direct_fallback(url) if "instagram.com" in url.lower() else None
         fallback = tk["direct_url"] if tk else (yt["direct_url"] if yt and yt.get("direct_url") else (ig["direct_url"] if ig and ig.get("direct_url") else build_fallback_url(url)))
-        raise HTTPException(status_code=503, detail="Download blocked from server IP. Retry later or use another network.")
+        return JSONResponse(status_code=202, content={"fallback_url": fallback, "message": "Direct server download blocked; opening fallback stream."})
 
 
 @router.post('/video-to-gif')
