@@ -14,6 +14,18 @@ from app.services.image_service import (
 )
 
 router = APIRouter()
+SUPPORTED_OUTPUTS = {
+    "JPG": ("JPEG", "jpg", "image/jpeg"),
+    "JPEG": ("JPEG", "jpg", "image/jpeg"),
+    "PNG": ("PNG", "png", "image/png"),
+    "WEBP": ("WEBP", "webp", "image/webp"),
+    "BMP": ("BMP", "bmp", "image/bmp"),
+    "GIF": ("GIF", "gif", "image/gif"),
+    "TIFF": ("TIFF", "tiff", "image/tiff"),
+    "TIF": ("TIFF", "tif", "image/tiff"),
+    "ICO": ("ICO", "ico", "image/x-icon"),
+    "AVIF": ("AVIF", "avif", "image/avif"),
+}
 
 
 def _validate_image(file: UploadFile) -> None:
@@ -29,11 +41,28 @@ async def compress_image_endpoint(file: UploadFile = File(...), quality: int = F
 
 
 @router.post("/convert-format")
-async def convert_format_endpoint(file: UploadFile = File(...), target_format: str = Form(...)) -> StreamingResponse:
+async def universal_convert_endpoint(
+    file: UploadFile = File(...),
+    input_format: str = Form(default="AUTO"),
+    target_format: str = Form(...),
+) -> StreamingResponse:
     _validate_image(file)
-    content = await convert_image_format(await file.read(), target_format=target_format)
-    ext = target_format.lower()
-    return StreamingResponse(iter([content]), media_type="application/octet-stream", headers={"Content-Disposition": f'attachment; filename="converted.{ext}"'})
+    fmt_key = target_format.upper().strip()
+    if fmt_key not in SUPPORTED_OUTPUTS:
+        raise HTTPException(status_code=400, detail=f"Unsupported target format: {target_format}")
+    pil_fmt, ext, mime = SUPPORTED_OUTPUTS[fmt_key]
+    raw = await file.read()
+    try:
+        content = await convert_image_format(raw, target_format=pil_fmt)
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=f"Conversion failed from {input_format} to {target_format}: {exc}") from exc
+
+    basename = (file.filename or "image").rsplit(".", 1)[0]
+    return StreamingResponse(
+        iter([content]),
+        media_type=mime,
+        headers={"Content-Disposition": f'attachment; filename="{basename}_converted.{ext}"'},
+    )
 
 
 @router.post("/resize")
