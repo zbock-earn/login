@@ -59,6 +59,16 @@ def youtube_piped_fallback(url: str) -> dict | None:
         return None
     return None
 
+
+
+def instagram_direct_fallback(url: str) -> dict | None:
+    try:
+        # lightweight no-auth mirror fallback that often exposes reel media page faster
+        direct = url.replace("https://www.instagram.com", "https://www.ddinstagram.com")
+        return {"title": "Instagram Reel", "direct_url": direct}
+    except Exception:
+        return None
+
 def build_fallback_url(url: str) -> str:
     u = url.lower()
     if "tiktok.com" in u:
@@ -111,6 +121,9 @@ async def media_metadata(url: str = Form(...)) -> dict:
         yt = youtube_piped_fallback(url) if ("youtube.com" in url.lower() or "youtu.be" in url.lower()) else None
         if yt and yt.get("direct_url"):
             return {"title": yt["title"], "duration": None, "formats": [{"format_id": "direct", "ext": "mp4", "resolution": "Auto"}], "fallback_url": yt["direct_url"], "warning": "Extractor blocked. Using direct YouTube fallback stream."}
+        ig = instagram_direct_fallback(url) if "instagram.com" in url.lower() else None
+        if ig and ig.get("direct_url"):
+            return {"title": ig["title"], "duration": None, "formats": [{"format_id": "direct", "ext": "mp4", "resolution": "Auto"}], "fallback_url": ig["direct_url"], "warning": "Extractor blocked. Using Instagram fallback mirror."}
         return {"title": "Fallback Mode", "duration": None, "formats": [], "fallback_url": build_fallback_url(url), "warning": "Extractor failed. Using fallback download page."}
 
 
@@ -129,7 +142,8 @@ async def media_download(url: str = Form(...), format_id: str | None = Form(defa
     except Exception:
         tk = tiktok_direct(url) if "tiktok.com" in url.lower() else None
         yt = youtube_piped_fallback(url) if ("youtube.com" in url.lower() or "youtu.be" in url.lower()) else None
-        fallback = tk["direct_url"] if tk else (yt["direct_url"] if yt and yt.get("direct_url") else build_fallback_url(url))
+        ig = instagram_direct_fallback(url) if "instagram.com" in url.lower() else None
+        fallback = tk["direct_url"] if tk else (yt["direct_url"] if yt and yt.get("direct_url") else (ig["direct_url"] if ig and ig.get("direct_url") else build_fallback_url(url)))
         return JSONResponse(status_code=202, content={"fallback_url": fallback, "message": "Direct download blocked on this server IP. Use fallback URL below."})
 
 
