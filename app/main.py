@@ -1,13 +1,15 @@
 from __future__ import annotations
 
+import io
 import json
 import time
 import uuid
+import zipfile
 from pathlib import Path
 
 from fastapi import BackgroundTasks, FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
@@ -48,6 +50,11 @@ async def limit_payload(request: Request, call_next):
 @app.get("/")
 async def home(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
+
+
+@app.get("/universal")
+async def universal(request: Request):
+    return templates.TemplateResponse("universal_converter.html", {"request": request})
 
 
 @app.get("/api/health")
@@ -107,3 +114,43 @@ async def convert(background_tasks: BackgroundTasks, file: UploadFile = File(...
 
     background_tasks.add_task(cleanup_paths, src_path, converted)
     return FileResponse(path=converted, filename=out_name, media_type="application/octet-stream", headers=headers)
+
+
+@app.post("/api/convert/batch")
+async def convert_batch(
+    files: list[UploadFile] = File(...),
+    target: str = Form(...),
+    options: str = Form("{}"),
+):
+    if not files:
+        raise HTTPException(status_code=400, detail="No files provided")
+
+    converted_files: list[tuple[str, bytes]] = []
+    opts = json.loads(options) if options else {}
+
+    for upl in files:
+        allowed = get_allowed_targets(upl.filename)
+        if target.lower() not in allowed:
+            raise HTTPException(status_code=400, detail=f"Target '{target}' is not valid for '{upl.filename}'.")
+
+        request_id = uuid.uuid4().hex
+        src_path = TMP_DIR / f"{request_id}_{Path(upl.filename).name}"
+        out_name = f"{Path(upl.filename).stem}.{target.lower()}"
+        out_path = OUTPUT_DIR / f"{request_id}_{out_name}"
+        src_path.write_bytes(await upl.read())
+        try:
+            converted = convert_file(src_path, out_path, target.lower(), opts)
+            converted_files.append((out_name, converted.read_bytes()))
+        finally:
+            cleanup_paths(src_path, out_path)
+
+    if len(converted_files) == 1:
+        name, data = converted_files[0]
+        return StreamingResponse(io.BytesIO(data), media_type="application/octet-stream", headers={"Content-Disposition": f"attachment; filename={name}"})
+
+    mem = io.BytesIO()
+    with zipfile.ZipFile(mem, mode="w", compression=zipfile.ZIP_STORED) as zf:
+        for name, data in converted_files:
+            zf.writestr(name, data)
+    mem.seek(0)
+    return StreamingResponse(mem, media_type="application/zip", headers={"Content-Disposition": "attachment; filename=converted_batch.zip"})

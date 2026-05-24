@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MZ Tools - Universal Converter</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>body{font-family:Inter,system-ui,sans-serif}</style>
+</head>
+<body class="bg-[#f8f9fa] dark:bg-[#1a1d20] text-slate-900 dark:text-slate-100 min-h-screen">
+  <div class="max-w-5xl mx-auto px-4 py-10">
+    <h1 class="text-3xl font-extrabold text-center">Cloud-Style Universal File Converter</h1>
+    <p id="dynamicTitle" class="text-center mt-3 text-lg">Convert anything to anything</p>
+
+    <section class="mt-8 bg-white dark:bg-[#202428] rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 p-5">
+      <div id="dropzone" class="rounded-lg border-2 border-dashed border-slate-300 dark:border-slate-600 p-8 text-center transition-all duration-300 bg-slate-50/70 dark:bg-slate-800/30 cursor-pointer">
+        <input id="fileInput" type="file" multiple class="hidden" />
+        <p class="font-semibold">Drop files here or click to select</p>
+      </div>
+
+      <div id="fileBadges" class="mt-4 flex flex-wrap gap-2"></div>
+
+      <div class="mt-5 flex flex-col md:flex-row md:items-center gap-3">
+        <div class="flex-1 flex items-center gap-3 p-3 rounded-lg border border-slate-200 dark:border-slate-700">
+          <span class="text-slate-500">to</span>
+          <div class="relative w-full">
+            <input id="formatSearchInput" placeholder="Search target format" class="w-full rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2" />
+            <select id="targetSelect" class="w-full mt-2 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2"></select>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-5 flex items-center justify-between gap-3">
+        <button id="addMore" class="px-4 py-3 rounded-md bg-slate-200 text-slate-800">+ Add More Files</button>
+        <button id="convertBtn" class="px-6 py-3 rounded-md bg-[#c81e1e] hover:bg-[#e02424] text-white font-semibold">🔧 Convert</button>
+      </div>
+
+      <div id="progressWrap" class="hidden mt-4 p-3 rounded-lg bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
+        <div class="flex items-center justify-between text-sm"><span id="progressText">Uploading file...</span><span id="progressPct">0%</span></div>
+        <div class="mt-2 h-2 rounded-full bg-slate-300 dark:bg-slate-700"><div id="progressBar" class="h-2 rounded-full bg-[#c81e1e] transition-all duration-200" style="width:0%"></div></div>
+      </div>
+    </section>
+
+    <div class="mt-6 grid gap-3">
+      <div class="h-20 rounded-lg border border-dashed border-slate-300 flex items-center justify-center text-slate-500">Monetag Ad Placeholder</div>
+      <div class="h-16 rounded-lg border border-dashed border-slate-300 flex items-center justify-center text-slate-500">Sticky Banner Placeholder</div>
+    </div>
+  </div>
+
+<script>
+const FORMAT_MATRIX = {images:{extensions:["png","jpg","jpeg","webp","svg","gif","bmp","tiff","tif","ico","psd","eps","heic","heif","ai","dds","tga","raw","cr2","nef","orf","sr2","inf","pbm","pgm","ppm","pnm","pcx","wbmp"],targets:["png","jpg","jpeg","webp","pdf","gif","bmp","tiff","ico","tga"]},documents:{extensions:["pdf","docx","doc","txt","rtf","odt","html","htm","xps","epub","pages","md","tex","pdfx","wpd","wps","abw","lwp","rst","sdw"],targets:["pdf","docx","txt","html","epub","rtf"]},audio:{extensions:["mp3","wav","m4a","flac","aac","ogg","wma","amr","aiff","aif","opus","pcm","alac","m4b","m4p","mp2","mp1","ac3","dts","ra","rm","voc","iff","mka","wv","ape","shn","cdr","oga","mid","midi"],targets:["mp3","wav","m4a","flac","aac","ogg","wma","opus"]},video:{extensions:["mp4","mkv","avi","mov","wmv","flv","webm","3gp","mpeg","mpg","m4v","vob","ogv","ts","mts","m2ts","divx","xvid","rmvb","asf","amv","qt","f4v","f4p","f4a","f4b","m2v","m1v","svi","3g2"],targets:["mp4","mkv","avi","mov","webm","mp3","wav","gif"]},spreadsheets:{extensions:["xls","xlsx","csv","ods","tsv","xlsm","xltx","xltm","xlsb","xml","numbers","dif","dbf","slk","sxc","fods","qpw","wb1","wb3"],targets:["xlsx","csv","pdf","ods","html"]},presentations:{extensions:["ppt","pptx","odp","pps","ppsx","pot","potx","key","keynote","dps","sda","sxd","sti","otp","fodp","uop","pptm","potm","ppsm"],targets:["pptx","pdf","odp","html"]},ebooks:{extensions:["epub","mobi","azw3","fb2","lit","lrf","prc","pdb","pml","rb","snb","tcr","cbz","cbr","cbc","chm","djvu","htmlz","txtz"],targets:["epub","mobi","pdf","txt","azw3"]},archives:{extensions:["zip","rar","7z","tar","gz","bz2","xz","iso","tgz","tbz2","tlz","txz","z","lz","lzma","lzh","arj","cab","dmg","wim","xar","zipx","ace","apk","jar","war","ear","cpio","rpm","deb"],targets:["zip","tar","gz","7z"]},fonts:{extensions:["ttf","otf","woff","woff2","eot","sfnt","pfa","pfb","afm","bin","bdf","pcf","pmf","ttf.vfont","otc","suit","ttc","dfont","snf","gxf"],targets:["ttf","otf","woff","woff2"]},vectors:{extensions:["svg","ai","eps","cdr","wmf","emf","dxf","dwg","plt","cgm","svgz","fxg","pdfa","fig","sk","sk1","skencil","vml","xarv","hpgl"],targets:["svg","png","pdf","eps"]},cad_3d:{extensions:["stl","obj","fbx","3ds","dae","ply","iges","step","stp","blend","c4d","ma","mb","max","lwo","lws","lxo","skp","wrz","wrl","x3d"],targets:["stl","obj","fbx","dxf"]}};
+const files=[];
+const allTargets=[...new Set(Object.values(FORMAT_MATRIX).flatMap(x=>x.targets))].sort();
+allTargets.forEach(t=>targetSelect.append(new Option(t.toUpperCase(),t)));
+const catFor=e=>Object.entries(FORMAT_MATRIX).find(([,v])=>v.extensions.includes(e))?.[0];
+function human(s){const u=['B','KB','MB','GB'];let i=0;while(s>=1024&&i<u.length-1){s/=1024;i++}return `${s.toFixed(i?1:0)} ${u[i]}`}
+function ext(n){const p=n.toLowerCase().split('.');return p.length>1?p.pop():''}
+function toast(msg){const t=document.createElement('div');t.className='fixed top-4 right-4 bg-rose-600 text-white px-4 py-2 rounded';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),2600)}
+function render(){fileBadges.innerHTML='';files.forEach((f,i)=>{const b=document.createElement('div');b.className='px-3 py-2 rounded-full bg-slate-200 dark:bg-slate-700 text-sm';b.innerHTML=`📄 ${f.file.name} (${human(f.file.size)}) <button data-i='${i}' class='text-red-500 ml-2'>✕</button>`;fileBadges.appendChild(b)});if(files[0]) dynamicTitle.textContent=`Convert ${ext(files[0].file.name).toUpperCase()} to ${targetSelect.value.toUpperCase()}`; else dynamicTitle.textContent='Convert anything to anything';}
+function add(fs){[...fs].forEach(file=>files.push({file,category:catFor(ext(file.name))}));render();}
+function resetProgress(){progressWrap.classList.add('hidden');progressBar.style.width='0%';progressPct.textContent='0%';progressText.textContent='Uploading file...';convertBtn.disabled=false;convertBtn.textContent='🔧 Convert';}
+async function convert(){if(!files.length){toast('Please add file(s) first');return;}const target=targetSelect.value;progressWrap.classList.remove('hidden');convertBtn.disabled=true;convertBtn.innerHTML='<span class="animate-pulse">Converting...</span>';
+try{progressText.textContent='Uploading file...';progressBar.style.width='15%';progressPct.textContent='15%';
+const fd=new FormData();files.forEach(f=>fd.append('files',f.file));fd.append('target',target);fd.append('options','{}');
+progressText.textContent='Converting format...';progressBar.style.width='55%';progressPct.textContent='55%';
+const r=await fetch('/api/convert/batch',{method:'POST',body:fd}); if(!r.ok) throw new Error(await r.text());
+progressText.textContent='Streaming download...';progressBar.style.width='90%';progressPct.textContent='90%';
+const blob=await r.blob(); const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=files.length>1?'converted_batch.zip':`${files[0].file.name.split('.').slice(0,-1).join('.')}.${target}`;a.click();URL.revokeObjectURL(a.href);
+progressBar.style.width='100%';progressPct.textContent='100%';progressText.textContent='Done';setTimeout(resetProgress,800);
+}catch(e){toast('Conversion failed. Please retry.');resetProgress();}
+}
+
+dropzone.addEventListener('click',()=>fileInput.click());fileInput.addEventListener('change',e=>add(e.target.files));
+['dragenter','dragover'].forEach(ev=>dropzone.addEventListener(ev,e=>{e.preventDefault();dropzone.classList.add('ring-4','ring-[#e02424]/40','border-[#e02424]','bg-red-50/60')}));
+['dragleave','drop'].forEach(ev=>dropzone.addEventListener(ev,e=>{e.preventDefault();dropzone.classList.remove('ring-4','ring-[#e02424]/40','border-[#e02424]','bg-red-50/60')}));
+dropzone.addEventListener('drop',e=>add(e.dataTransfer.files));
+fileBadges.addEventListener('click',e=>{const i=+e.target.dataset.i; if(!Number.isNaN(i)){files.splice(i,1);render();}});
+addMore.addEventListener('click',()=>fileInput.click()); convertBtn.addEventListener('click',convert);
+formatSearchInput.addEventListener('input',e=>{const q=e.target.value.toLowerCase();[...targetSelect.options].forEach(o=>o.hidden=!o.value.includes(q));});
+targetSelect.addEventListener('change',render);
+</script>
+</body></html>
