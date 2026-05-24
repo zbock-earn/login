@@ -6,7 +6,7 @@ import tempfile
 from pathlib import Path
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
-from fastapi.background import BackgroundTask
+from starlette.background import BackgroundTask
 from fastapi.responses import FileResponse
 
 router = APIRouter()
