@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+{% block title %}Tool | {{ slug }}{% endblock %}
+{% block content %}
+<section class="grid lg:grid-cols-4 gap-6">
+  <article class="lg:col-span-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 space-y-4">
+    <h1 class="text-2xl font-bold" id="toolTitle">{{ slug.replace('-', ' ').title() }}</h1>
+    <p class="text-slate-600 dark:text-slate-300">Dedicated workspace for this selected tool.</p>
+
+    <div id="instantWorkspace" class="space-y-4 hidden">
+      <div class="grid md:grid-cols-2 gap-4">
+        <textarea id="toolInput" class="w-full min-h-40 rounded-lg border dark:bg-slate-800 p-3" placeholder="Paste text to test instant tools..."></textarea>
+        <div id="toolOutput" class="rounded-lg border dark:bg-slate-800 p-3 text-sm">Output preview...</div>
+      </div>
+      <div class="flex flex-wrap gap-2" id="instantButtons">
+        <button data-action="word" class="px-3 py-2 rounded bg-slate-200 dark:bg-slate-700">Word Counter</button>
+        <button data-action="case" class="px-3 py-2 rounded bg-slate-200 dark:bg-slate-700">Case Convert</button>
+        <button data-action="password" class="px-3 py-2 rounded bg-slate-200 dark:bg-slate-700">Generate Password</button>
+        <button data-action="base64e" class="px-3 py-2 rounded bg-slate-200 dark:bg-slate-700">Base64 Encode</button>
+        <button data-action="qr" class="px-3 py-2 rounded bg-slate-200 dark:bg-slate-700">QR URL</button>
+        <button data-action="reverse" class="px-3 py-2 rounded bg-slate-200 dark:bg-slate-700">Text Reverse</button>
+        <button data-action="slug" class="px-3 py-2 rounded bg-slate-200 dark:bg-slate-700">Slug</button>
+        <button data-action="dedupe" class="px-3 py-2 rounded bg-slate-200 dark:bg-slate-700">Remove Duplicates</button>
+      </div>
+    </div>
+
+    <div id="backendPanel" class="rounded-xl border p-4 text-sm text-slate-500">Tool UI loading...</div>
+    <div class="rounded-xl border border-dashed p-3 text-xs text-center text-slate-500">Monetag Direct Link Trigger Zone: <a href="YOUR_MONETAG_DIRECT_LINK_HERE" target="_blank" class="underline">Open Sponsor</a></div>
+  </article>
+  <aside class="space-y-4">
+    <div id="ad-sidebar-1" class="rounded-xl border border-dashed border-slate-400 dark:border-slate-700 p-4 text-xs text-center">Ad Placeholder: Sidebar 300x250</div>
+    <div id="ad-sidebar-2" class="rounded-xl border border-dashed border-slate-400 dark:border-slate-700 p-4 text-xs text-center">Ad Placeholder: Direct Link CTA</div>
+    <div id="ad-sidebar-3" class="rounded-xl border border-dashed border-slate-400 dark:border-slate-700 p-4 text-xs text-center">Ad Placeholder: Sticky Promo</div>
+  </aside>
+</section>
+{% endblock %}
+{% block scripts %}
+<script src="/static/js/media-tools.js"></script>
+<script src="/static/js/image-tools.js"></script>
+<script src="/static/js/pdf-tools.js"></script>
+<script src="/static/js/text-tools.js"></script>
+<script src="/static/js/calculator-tools.js"></script>
+<script src="/static/js/dev-tools.js"></script>
+<script type="module">
+import { InstantTools } from '/static/js/instant-tools.js';
+const slug = window.location.pathname.split('/').pop();
+const textOnly = slug.includes('case-converter') || slug.includes('word-character-counter') || slug.includes('remove-duplicate-lines') || slug.includes('text-reverser') || slug.includes('find-and-replace-text') || slug.includes('slug-generator') || slug.includes('binary-to-text-vice-versa');
+const instant = document.getElementById('instantWorkspace');
+if (textOnly && instant) instant.classList.remove('hidden');
+
+window.renderMediaUI?.(slug);
+window.renderImageUI?.(slug);
+window.renderPdfUI?.(slug);
+window.renderTextUI?.(slug);
+window.renderCalcUI?.(slug);
+window.renderDevUI?.(slug);
+
+const input = document.getElementById('toolInput');
+const output = document.getElementById('toolOutput');
+document.querySelectorAll('#instantButtons [data-action]').forEach((btn)=>btn.addEventListener('click',()=>{
+  const text = input?.value || '';
+  const a = btn.dataset.action;
+  if(a==='word'){ const r=InstantTools.wordCounter(text); output.textContent=`Words: ${r.words} | Characters: ${r.chars}`; }
+  if(a==='case'){ const r=InstantTools.caseConverter(text); output.textContent=`UPPER:\n${r.upper}\n\nTITLE:\n${r.title}`; }
+  if(a==='password'){ output.textContent = InstantTools.passwordGenerator(20); }
+  if(a==='base64e'){ output.textContent = InstantTools.base64EncodeDecode(text, 'encode'); }
+  if(a==='qr'){ output.innerHTML = `<a class="text-indigo-500 underline" target="_blank" href="${InstantTools.qrCodeUrl(text || 'MZ Tools')}">Open QR Image</a>`; }
+  if(a==='reverse'){ output.textContent = InstantTools.textReverser(text); }
+  if(a==='slug'){ output.textContent = InstantTools.slugGenerator(text); }
+  if(a==='dedupe'){ output.textContent = InstantTools.duplicateLineRemover(text); }
+}));
+</script>
+{% endblock %}
