@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block title %}Ultimate Universal Converter | MZ Tools{% endblock %}
+{% block content %}
+<section class="max-w-5xl mx-auto">
+  <div class="rounded-3xl p-6 md:p-10 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border border-slate-200 dark:border-slate-700 shadow-2xl space-y-5">
+    <h1 class="text-3xl font-extrabold">Ultimate Universal Converter Workspace</h1>
+    <div id="dropZone" class="rounded-2xl border-2 border-dashed border-indigo-400 p-8 text-center cursor-pointer">Drop any file here or click to upload<input id="fileInput" type="file" class="hidden"></div>
+    <div class="grid md:grid-cols-2 gap-3">
+      <input id="formatSearchInput" placeholder="Search target format (e.g. pdf)" class="w-full rounded-xl border p-3 dark:bg-slate-800"/>
+      <select id="targetFormat" class="w-full rounded-xl border p-3 dark:bg-slate-800"></select>
+    </div>
+    <button id="convertBtn" class="px-5 py-3 rounded-xl bg-indigo-600 text-white font-semibold">Convert & Download</button>
+    <div class="text-xs text-slate-500">Ad: <a href="YOUR_MONETAG_DIRECT_LINK_HERE" target="_blank" class="underline">Monetag Direct Link</a></div>
+    <pre id="status" class="text-xs bg-slate-100 dark:bg-slate-800 rounded p-3"></pre>
+  </div>
+</section>
+{% endblock %}
+{% block scripts %}<script src="/static/js/universal-converter.js"></script>{% endblock %}

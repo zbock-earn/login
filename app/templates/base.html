@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en" class="dark scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}MZ Tools{% endblock %}</title>
+  <script>
+    if (localStorage.theme === 'light') document.documentElement.classList.remove('dark');
+  </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { darkMode: 'class', theme: { extend: { colors: { brand: {500:'#6366f1',600:'#4f46e5'} }}} };
+  </script>
+  <!-- Monetag Main Tag Placeholder -->
+  <script data-cfasync="false" src="https://example.com/monetag/tag.js?id=YOUR_MONETAG_TAG_ID_HERE"></script>
+</head>
+<body class="bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100 min-h-screen">
+  <div class="bg-gradient-to-r from-brand-600 to-cyan-500 text-white text-center text-sm py-2">🛠️ MZ Tools — 55+ Free Online Utility Tools</div>
+  <header class="sticky top-0 z-50 bg-white/85 dark:bg-slate-900/85 backdrop-blur border-b border-slate-200 dark:border-slate-800">
+    <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
+      <a href="/" class="font-bold text-xl">MZ Tools</a>
+      <nav class="hidden md:flex gap-6 text-sm">
+        <a href="#features" class="hover:text-brand-500">Features</a><a href="#ads" class="hover:text-brand-500">Ads</a>
+      </nav>
+      <div class="flex gap-2">
+        <button id="themeToggle" class="px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700">Toggle Theme</button>
+      </div>
+    </div>
+  </header>
+  <main class="max-w-7xl mx-auto px-4 py-8">{% block content %}{% endblock %}</main>
+  <aside id="ads" class="max-w-7xl mx-auto px-4 pb-10 grid md:grid-cols-3 gap-4">
+    <section id="ad-banner-top" class="md:col-span-2 rounded-xl border border-dashed border-slate-400 dark:border-slate-700 p-6 text-center text-sm text-slate-500">Monetag Tag Placeholder (ID: YOUR_MONETAG_TAG_ID_HERE)</section>
+    <section id="ad-cta-box" class="rounded-xl border border-dashed border-slate-400 dark:border-slate-700 p-6 text-center text-sm text-slate-500"><a href="YOUR_MONETAG_DIRECT_LINK_HERE" target="_blank" class="underline">Monetag Direct Link CTA</a></section>
+  </aside>
+  <script src="/static/js/main.js"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

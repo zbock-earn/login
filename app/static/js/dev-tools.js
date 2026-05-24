@@ -1,0 +1,40 @@
+async function sha256(text){const b=new TextEncoder().encode(text);const h=await crypto.subtle.digest('SHA-256',b);return [...new Uint8Array(h)].map(x=>x.toString(16).padStart(2,'0')).join('');}
+
+function isDevSlug(slug){
+  return slug.includes('strong-password-generator')||slug.includes('qr-code-generator')||slug.includes('qr-code-scanner')||slug.includes('html-formatter-minifier')||slug.includes('css-formatter-minifier')||slug.includes('json-formatter-validator')||slug.includes('user-agent-finder')||slug.includes('md5-sha-256-hash-generator')||slug.includes('ip-address-finder-shows-user-s-public-ip')||slug.includes('website-ping-status-checker');
+}
+
+function renderDevUI(slug){
+  const panel=document.getElementById('backendPanel'); if(!panel||!isDevSlug(slug)) return;
+  const map={
+    'strong-password-generator':`<form id=pwdForm class='space-y-2'><input name=len type=range min=8 max=64 value=16 class='w-full'><label><input type=checkbox name=upper checked> Upper</label> <label><input type=checkbox name=num checked> Numbers</label> <label><input type=checkbox name=sym checked> Symbols</label><button class='px-3 py-2 rounded bg-indigo-600 text-white'>Generate</button><input id=pwdOut class='w-full border rounded p-2'><button type='button' id='copyPwd' class='px-3 py-2 rounded bg-emerald-600 text-white'>Copy</button></form>`,
+    'qr-code-generator-with-download-option':`<form id=qrGen class='space-y-2'><input name=text placeholder='Text or URL' class='w-full border rounded p-2'><button class='px-3 py-2 rounded bg-indigo-600 text-white'>Generate QR</button><img id=qrImg class='max-w-56'><a id=qrDl class='hidden px-3 py-2 rounded bg-emerald-600 text-white inline-block' download='qr.png'>Download PNG</a></form>`,
+    'qr-code-scanner-using-web-camera':`<div class='space-y-2'><video id='qrVideo' class='w-full rounded border' autoplay playsinline></video><button id='startQrScan' class='px-3 py-2 rounded bg-indigo-600 text-white'>Start Scanner</button><p id='qrScanOut' class='text-sm'></p></div>`,
+    'html-formatter-minifier':`<textarea id=htmlIn class='w-full min-h-40 border rounded p-2' placeholder='HTML'></textarea><div class='flex gap-2 mt-2'><button id=htmlFmt class='px-3 py-2 rounded bg-indigo-600 text-white'>Format</button><button id=htmlMin class='px-3 py-2 rounded bg-slate-700 text-white'>Minify</button></div><textarea id=htmlOut class='w-full min-h-40 border rounded p-2 mt-2'></textarea>`,
+    'css-formatter-minifier':`<textarea id=cssIn class='w-full min-h-40 border rounded p-2' placeholder='CSS'></textarea><div class='flex gap-2 mt-2'><button id=cssFmt class='px-3 py-2 rounded bg-indigo-600 text-white'>Format</button><button id=cssMin class='px-3 py-2 rounded bg-slate-700 text-white'>Minify</button></div><textarea id=cssOut class='w-full min-h-40 border rounded p-2 mt-2'></textarea>`,
+    'json-formatter-validator':`<textarea id=jsonIn class='w-full min-h-40 border rounded p-2' placeholder='JSON'></textarea><div class='flex gap-2 mt-2'><button id=jsonFmt class='px-3 py-2 rounded bg-indigo-600 text-white'>Format</button><p id=jsonStatus class='text-sm'></p></div><textarea id=jsonOut class='w-full min-h-40 border rounded p-2 mt-2'></textarea>`,
+    'user-agent-finder':`<div class='text-sm space-y-1'><p><b>User Agent:</b> <span id=uaStr></span></p><p><b>Platform:</b> <span id=uaPlt></span></p><p><b>Language:</b> <span id=uaLang></span></p></div>`,
+    'md5-sha-256-hash-generator':`<textarea id=hashIn class='w-full min-h-28 border rounded p-2' placeholder='Input text'></textarea><button id=hashBtn class='px-3 py-2 rounded bg-indigo-600 text-white mt-2'>Generate Hashes</button><p class='text-xs mt-2'>MD5 (placeholder): <span id=md5Out></span></p><p class='text-xs'>SHA-256: <span id=shaOut></span></p>`,
+    'ip-address-finder-shows-user-s-public-ip':`<button id=ipBtn class='px-3 py-2 rounded bg-indigo-600 text-white'>Fetch IP Info</button><pre id=ipOut class='text-xs bg-slate-100 dark:bg-slate-800 rounded p-2 mt-2'></pre>`,
+    'website-ping-status-checker':`<form id=pingForm class='space-y-2'><input name=url placeholder='https://example.com' class='w-full border rounded p-2'><button class='px-3 py-2 rounded bg-indigo-600 text-white'>Check Status</button><pre id=pingOut class='text-xs bg-slate-100 dark:bg-slate-800 rounded p-2'></pre></form>`
+  };
+  panel.innerHTML=map[slug]||panel.innerHTML; bindDev();
+}
+
+function bindDev(){
+  document.getElementById('pwdForm')?.addEventListener('submit',e=>{e.preventDefault();const f=new FormData(e.target);let chars='abcdefghijklmnopqrstuvwxyz';if(f.get('upper'))chars+='ABCDEFGHIJKLMNOPQRSTUVWXYZ';if(f.get('num'))chars+='0123456789';if(f.get('sym'))chars+='!@#$%^&*()_+-=[]{}';const len=+f.get('len');const arr=crypto.getRandomValues(new Uint32Array(len));document.getElementById('pwdOut').value=[...arr].map(n=>chars[n%chars.length]).join('');});
+  document.getElementById('copyPwd')?.addEventListener('click',()=>navigator.clipboard.writeText(document.getElementById('pwdOut').value));
+  document.getElementById('qrGen')?.addEventListener('submit',e=>{e.preventDefault();const t=new FormData(e.target).get('text')||'';const u=`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(t)}`;const img=document.getElementById('qrImg');img.src=u;const dl=document.getElementById('qrDl');dl.href=u;dl.classList.remove('hidden');});
+  document.getElementById('startQrScan')?.addEventListener('click',async()=>{const v=document.getElementById('qrVideo');try{v.srcObject=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});document.getElementById('qrScanOut').textContent='Camera started. (Decoder integration point: jsQR/zxing)';}catch(e){document.getElementById('qrScanOut').textContent='Unable to access camera.';}});
+  document.getElementById('htmlFmt')?.addEventListener('click',()=>{const t=document.getElementById('htmlIn').value;document.getElementById('htmlOut').value=t.replace(/></g,'>\n<');});
+  document.getElementById('htmlMin')?.addEventListener('click',()=>{const t=document.getElementById('htmlIn').value;document.getElementById('htmlOut').value=t.replace(/\n|\t/g,'').replace(/>\s+</g,'><').trim();});
+  document.getElementById('cssFmt')?.addEventListener('click',()=>{const t=document.getElementById('cssIn').value;document.getElementById('cssOut').value=t.replace(/\{/g,'{\n  ').replace(/;/g,';\n  ').replace(/\}/g,'\n}\n');});
+  document.getElementById('cssMin')?.addEventListener('click',()=>{const t=document.getElementById('cssIn').value;document.getElementById('cssOut').value=t.replace(/\s+/g,' ').replace(/ ?([{}:;,]) ?/g,'$1').trim();});
+  document.getElementById('jsonFmt')?.addEventListener('click',()=>{const t=document.getElementById('jsonIn').value;try{document.getElementById('jsonOut').value=JSON.stringify(JSON.parse(t),null,2);document.getElementById('jsonStatus').textContent='Valid JSON';document.getElementById('jsonStatus').className='text-sm text-emerald-500';}catch{document.getElementById('jsonStatus').textContent='Invalid JSON';document.getElementById('jsonStatus').className='text-sm text-red-500';}});
+  if(document.getElementById('uaStr')){uaStr.textContent=navigator.userAgent;uaPlt.textContent=navigator.platform;uaLang.textContent=navigator.language;}
+  document.getElementById('hashBtn')?.addEventListener('click',async()=>{const t=document.getElementById('hashIn').value;document.getElementById('md5Out').textContent='md5-'+btoa(unescape(encodeURIComponent(t))).slice(0,32);document.getElementById('shaOut').textContent=await sha256(t);});
+  document.getElementById('ipBtn')?.addEventListener('click',async()=>{const r=await fetch('/api/v1/dev/ip-info');const j=await r.json();document.getElementById('ipOut').textContent=JSON.stringify(j,null,2);});
+  document.getElementById('pingForm')?.addEventListener('submit',async e=>{e.preventDefault();const u=new FormData(e.target).get('url');const r=await fetch(`/api/v1/dev/website-status?url=${encodeURIComponent(u)}`);const j=await r.json();document.getElementById('pingOut').textContent=JSON.stringify(j,null,2);});
+}
+
+window.renderDevUI = renderDevUI;
