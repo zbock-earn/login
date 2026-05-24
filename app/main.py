@@ -60,6 +60,20 @@ async def formats():
     return FORMAT_MATRIX
 
 
+
+
+@app.get("/api/capabilities")
+async def capabilities():
+    total_extensions = sum(len(v["extensions"]) for v in FORMAT_MATRIX.values())
+    total_targets = sum(len(v["targets"]) for v in FORMAT_MATRIX.values())
+    return {
+        "categories": list(FORMAT_MATRIX.keys()),
+        "total_extensions": total_extensions,
+        "total_targets": total_targets,
+        "max_upload_mb": MAX_CONTENT_LENGTH // (1024 * 1024),
+        "retention_ttl_seconds": RETENTION_TTL_SECONDS,
+    }
+
 @app.post("/api/convert")
 async def convert(background_tasks: BackgroundTasks, file: UploadFile = File(...), target: str = Form(...), options: str = Form("{}")):
     allowed = get_allowed_targets(file.filename)
