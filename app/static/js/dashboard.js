@@ -50,6 +50,7 @@ fetch('/api/v1/tools/catalog?include_stats=true').then(r => r.json()).then((payl
   allStats = payload.stats;
   renderCategories(categories);
   renderStats();
+  allTools.unshift({name:'Ultimate Universal Converter Workspace', category:'Universal', slug:'universal-converter', description:'Unified high-performance converter with 100+ format targets.', backend_supported:true, tags:['convert','universal']});
   renderCards();
 }).catch(() => {
   grid.innerHTML = '<p class="text-red-500">Unable to load tool catalog.</p>';

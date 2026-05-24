@@ -35,6 +35,11 @@ async def dashboard(request: Request) -> HTMLResponse:
 
 
 @app.get("/tools/{slug}", response_class=HTMLResponse)
+@app.get('/universal-converter', response_class=HTMLResponse)
+async def universal_converter_page(request: Request) -> HTMLResponse:
+    return templates.TemplateResponse('universal_converter.html', {'request': request})
+
+
 async def tool_page(request: Request, slug: str) -> HTMLResponse:
     return templates.TemplateResponse("tool.html", {"request": request, "slug": slug, "app_name": settings.app_name})
 
