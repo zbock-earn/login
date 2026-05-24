@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ConvertOmni - Glass Conversion Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          boxShadow: {
+            glow: '0 0 0 1px rgba(52,211,153,.25), 0 0 30px rgba(34,211,238,.15)'
+          },
+          keyframes: {
+            pulsebar: {
+              '0%,100%': { opacity: .55 },
+              '50%': { opacity: 1 }
+            }
+          },
+          animation: {
+            pulsebar: 'pulsebar 1.2s ease-in-out infinite'
+          }
+        }
+      }
+    };
+  </script>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-[#090D16] via-[#0D1320] to-[#111726] text-slate-100 antialiased">
+  <div class="fixed inset-0 pointer-events-none">
+    <div class="absolute -top-40 -left-40 w-96 h-96 rounded-full bg-cyan-500/10 blur-3xl"></div>
+    <div class="absolute top-1/2 -right-32 w-[28rem] h-[28rem] rounded-full bg-emerald-500/10 blur-3xl"></div>
+    <div class="absolute bottom-0 left-1/3 w-80 h-80 rounded-full bg-indigo-500/10 blur-3xl"></div>
+  </div>
+
+  <main class="relative z-10 max-w-7xl mx-auto px-4 py-8 md:py-12">
+    <section class="backdrop-blur-2xl bg-slate-900/40 border border-slate-700/60 shadow-[0_20px_60px_rgba(0,0,0,0.7)] rounded-2xl p-6 md:p-8">
+      <header class="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-6 mb-6">
+        <div>
+          <h1 class="bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 to-cyan-400 font-extrabold text-4xl tracking-tight">ConvertOmni</h1>
+          <p class="text-slate-300 mt-2">Universal format conversion command center with batch intelligence.</p>
+        </div>
+        <div class="w-full xl:w-auto">
+          <label for="globalTarget" class="text-sm text-slate-300 block mb-2">Convert All to</label>
+          <select id="globalTarget" class="w-full xl:w-72 bg-slate-950/70 border border-slate-700/80 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-cyan-400/70">
+            <option value="">Auto (per file)</option>
+          </select>
+        </div>
+      </header>
+
+      <div id="dropzone" class="border-dashed border-2 border-cyan-500/40 bg-slate-900/20 hover:bg-slate-800/30 transition-all duration-300 rounded-2xl p-10 text-center cursor-pointer select-none">
+        <input id="fileInput" type="file" multiple class="hidden" />
+        <p class="text-lg font-semibold text-cyan-300">Drop files here or click to upload</p>
+        <p class="text-slate-400 mt-2">Supports 300+ extensions mapped across 12 categories.</p>
+      </div>
+
+      <div class="mt-8 overflow-x-auto">
+        <table class="min-w-full border-separate border-spacing-y-3">
+          <thead>
+            <tr class="text-left text-slate-400 text-sm">
+              <th class="px-3">Type</th>
+              <th class="px-3">File</th>
+              <th class="px-3">Convert To</th>
+              <th class="px-3">Status</th>
+              <th class="px-3">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="queueBody"></tbody>
+        </table>
+      </div>
+
+      <div class="mt-8 flex flex-col sm:flex-row gap-3 justify-end">
+        <button id="clearBtn" class="px-5 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700">Clear Queue</button>
+        <button id="startBtn" class="px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 hover:opacity-90 font-semibold text-slate-950">Start Batch Conversion</button>
+      </div>
+    </section>
+  </main>
+
+  <div id="settingsModal" class="fixed inset-0 bg-black/60 hidden items-center justify-center z-30 p-4">
+    <div class="w-full max-w-xl backdrop-blur-2xl bg-slate-900/70 border border-slate-700 rounded-2xl p-6">
+      <div class="flex items-center justify-between">
+        <h2 class="text-xl font-bold">Conversion Settings</h2>
+        <button id="closeModal" class="text-slate-300 hover:text-white">✕</button>
+      </div>
+      <p id="modalFileName" class="text-slate-400 mt-2"></p>
+      <div id="modalControls" class="mt-6 space-y-4"></div>
+      <div class="mt-6 text-right">
+        <button id="saveSettings" class="px-5 py-2 rounded-lg bg-cyan-500 text-slate-950 font-semibold">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const FORMAT_MATRIX = {
+      images: {
+        extensions: ["png","jpg","jpeg","webp","svg","gif","bmp","tiff","tif","ico","psd","eps","heic","heif","ai","dds","tga","raw","cr2","nef","orf","sr2","inf","pbm","pgm","ppm","pnm","pcx","wbmp"],
+        targets: ["png","jpg","jpeg","webp","pdf","gif","bmp","tiff","ico","tga"]
+      },
+      documents: {
+        extensions: ["pdf","docx","doc","txt","rtf","odt","html","htm","xps","epub","pages","md","tex","pdfx","wpd","wps","abw","lwp","rst","sdw"],
+        targets: ["pdf","docx","txt","html","epub","rtf"]
+      },
+      audio: {
+        extensions: ["mp3","wav","m4a","flac","aac","ogg","wma","amr","aiff","aif","opus","pcm","alac","m4b","m4p","mp2","mp1","ac3","dts","ra","rm","voc","iff","mka","wv","ape","shn","cdr","oga","mid","midi"],
+        targets: ["mp3","wav","m4a","flac","aac","ogg","wma","opus"]
+      },
+      video: {
+        extensions: ["mp4","mkv","avi","mov","wmv","flv","webm","3gp","mpeg","mpg","m4v","vob","ogv","ts","mts","m2ts","divx","xvid","rmvb","asf","amv","qt","f4v","f4p","f4a","f4b","m2v","m1v","svi","3g2"],
+        targets: ["mp4","mkv","avi","mov","webm","mp3","wav","gif"]
+      },
+      spreadsheets: {
+        extensions: ["xls","xlsx","csv","ods","tsv","xlsm","xltx","xltm","xlsb","xml","numbers","dif","dbf","slk","sxc","fods","qpw","wb1","wb3"],
+        targets: ["xlsx","csv","pdf","ods","html"]
+      },
+      presentations: {
+        extensions: ["ppt","pptx","odp","pps","ppsx","pot","potx","key","keynote","dps","sda","sxd","sti","otp","fodp","uop","pptm","potm","ppsm"],
+        targets: ["pptx","pdf","odp","html"]
+      },
+      ebooks: {
+        extensions: ["epub","mobi","azw3","fb2","lit","lrf","prc","pdb","pml","rb","snb","tcr","cbz","cbr","cbc","chm","djvu","htmlz","txtz"],
+        targets: ["epub","mobi","pdf","txt","azw3"]
+      },
+      archives: {
+        extensions: ["zip","rar","7z","tar","gz","bz2","xz","iso","tgz","tbz2","tlz","txz","z","lz","lzma","lzh","arj","cab","dmg","wim","xar","zipx","ace","apk","jar","war","ear","cpio","rpm","deb"],
+        targets: ["zip","tar","gz","7z"]
+      },
+      fonts: {
+        extensions: ["ttf","otf","woff","woff2","eot","sfnt","pfa","pfb","afm","bin","bdf","pcf","pmf","ttf.vfont","otc","suit","ttc","dfont","snf","gxf"],
+        targets: ["ttf","otf","woff","woff2"]
+      },
+      vectors: {
+        extensions: ["svg","ai","eps","cdr","wmf","emf","dxf","dwg","plt","cgm","svgz","fxg","pdfa","fig","sk","sk1","skencil","vml","xarv","hpgl"],
+        targets: ["svg","png","pdf","eps"]
+      },
+      cad_3d: {
+        extensions: ["stl","obj","fbx","3ds","dae","ply","iges","step","stp","blend","c4d","ma","mb","max","lwo","lws","lxo","skp","wrz","wrl","x3d"],
+        targets: ["stl","obj","fbx","dxf"]
+      }
+    };
+
+    const ALL_TARGETS = [...new Set(Object.values(FORMAT_MATRIX).flatMap(c => c.targets))].sort();
+    const queue = [];
+    let rowId = 0;
+    let currentSettingsId = null;
+
+    const els = {
+      dropzone: document.getElementById('dropzone'), fileInput: document.getElementById('fileInput'),
+      queueBody: document.getElementById('queueBody'), startBtn: document.getElementById('startBtn'),
+      clearBtn: document.getElementById('clearBtn'), globalTarget: document.getElementById('globalTarget'),
+      settingsModal: document.getElementById('settingsModal'), closeModal: document.getElementById('closeModal'),
+      saveSettings: document.getElementById('saveSettings'), modalControls: document.getElementById('modalControls'),
+      modalFileName: document.getElementById('modalFileName')
+    };
+
+    function initGlobalTargets(){
+      ALL_TARGETS.forEach(t=>{
+        const o=document.createElement('option');o.value=t;o.textContent=t.toUpperCase();els.globalTarget.appendChild(o);
+      });
+    }
+
+    function bytesToSize(bytes){
+      if (bytes===0) return '0 B';
+      const s=['B','KB','MB','GB']; const i=Math.floor(Math.log(bytes)/Math.log(1024));
+      return `${(bytes/Math.pow(1024,i)).toFixed(i?1:0)} ${s[i]}`;
+    }
+
+    function truncate(name){ return name.length>25 ? `${name.slice(0,22)}...` : name; }
+    function getExt(name){ const p=name.toLowerCase().split('.'); return p.length>1 ? p.pop() : ''; }
+
+    function getCategory(ext){
+      for(const [k,v] of Object.entries(FORMAT_MATRIX)){ if(v.extensions.includes(ext)) return k; }
+      return null;
+    }
+
+    function getTargets(category){ return category ? FORMAT_MATRIX[category].targets : []; }
+
+    function iconFor(cat){
+      const map={images:'🖼️',documents:'📄',audio:'🎵',video:'🎬',spreadsheets:'📊',presentations:'📽️',ebooks:'📚',archives:'🗜️',fonts:'🔤',vectors:'🧭',cad_3d:'🧊'};
+      return map[cat]||'📁';
+    }
+
+    function statusClass(status){
+      if(status==='queued') return 'bg-amber-500/20 text-amber-300';
+      if(status==='processing') return 'bg-indigo-500/20 text-indigo-300';
+      return 'bg-emerald-500/20 text-emerald-300';
+    }
+
+    function addFiles(files){
+      [...files].forEach(file=>{
+        const ext=getExt(file.name); const category=getCategory(ext); const targets=getTargets(category);
+        const selected = targets[0] || '';
+        queue.push({id:++rowId,file,ext,category,targets,selectedTarget:selected,status:'queued',progress:0,settings:{quality:80,bitrate:'192',resolution:'1080p'}});
+      });
+      renderQueue();
+    }
+
+    function renderQueue(){
+      els.queueBody.innerHTML='';
+      queue.forEach(item=>{
+        const tr=document.createElement('tr');
+        tr.className='bg-slate-900/50 border border-slate-700/60';
+        tr.innerHTML=`
+          <td class="px-3 py-4"><span class="inline-flex items-center gap-2 px-2 py-1 rounded-lg bg-slate-800/80 border border-slate-700 text-sm">${iconFor(item.category)} ${item.category?item.category.replace('_','/'): 'unknown'}</span></td>
+          <td class="px-3 py-4"><div class="font-medium">${truncate(item.file.name)}</div><div class="text-xs text-slate-400">${bytesToSize(item.file.size)} · .${item.ext||'n/a'}</div></td>
+          <td class="px-3 py-4">${renderTargetSelect(item)}</td>
+          <td class="px-3 py-4">${renderStatus(item)}</td>
+          <td class="px-3 py-4"><div class="flex items-center gap-2"><button data-settings="${item.id}" class="px-2 py-1 rounded bg-slate-800 border border-slate-700">⚙️</button><button data-remove="${item.id}" class="px-2 py-1 rounded bg-rose-900/40 border border-rose-700/60">✕</button></div></td>
+        `;
+        els.queueBody.appendChild(tr);
+      });
+    }
+
+    function renderTargetSelect(item){
+      if(!item.targets.length) return '<span class="text-rose-300 text-sm">No supported conversion</span>';
+      return `<select data-target="${item.id}" class="w-36 bg-slate-950/70 border border-slate-700 rounded-lg px-2 py-1">${item.targets.map(t=>`<option value="${t}" ${item.selectedTarget===t?'selected':''}>${t.toUpperCase()}</option>`).join('')}</select>`;
+    }
+
+    function renderStatus(item){
+      const action=item.status==='ready'?`<button data-download="${item.id}" class="mt-2 text-xs px-2 py-1 rounded bg-emerald-500 text-slate-950 font-semibold">Ready to Download</button>`:'';
+      return `<div><span class="px-2 py-1 rounded text-xs ${statusClass(item.status)}">${item.status.toUpperCase()}</span><div class="mt-2 h-2 rounded-full bg-slate-800 overflow-hidden"><div class="h-full ${item.status==='processing'?'animate-pulsebar':''} ${item.status==='ready'?'bg-emerald-400':'bg-cyan-400'}" style="width:${item.progress}%"></div></div><div class="text-xs text-slate-400 mt-1">${item.progress}%</div>${action}</div>`;
+    }
+
+    function applyGlobalTarget(val){
+      queue.forEach(item=>{ if(item.targets.includes(val)) item.selectedTarget=val; });
+      renderQueue();
+    }
+
+    function openSettings(id){
+      const item=queue.find(q=>q.id===id); if(!item) return;
+      currentSettingsId=id; els.modalFileName.textContent=item.file.name;
+      const target=item.selectedTarget;
+      const cat=Object.entries(FORMAT_MATRIX).find(([,v])=>v.targets.includes(target))?.[0] || item.category;
+      let controls='';
+      if(cat==='images'||cat==='vectors') controls += `<label class="block">Compression: <span id="qualityValue">${item.settings.quality}%</span><input id="quality" type="range" min="1" max="100" value="${item.settings.quality}" class="w-full mt-2"></label>`;
+      if(cat==='audio') controls += `<label class="block">Bitrate<select id="bitrate" class="w-full mt-2 bg-slate-950 border border-slate-700 rounded-lg p-2"><option ${item.settings.bitrate==='128'?'selected':''} value="128">128 kbps</option><option ${item.settings.bitrate==='192'?'selected':''} value="192">192 kbps</option><option ${item.settings.bitrate==='320'?'selected':''} value="320">320 kbps</option></select></label>`;
+      if(cat==='video') controls += `<label class="block">Resolution<select id="resolution" class="w-full mt-2 bg-slate-950 border border-slate-700 rounded-lg p-2"><option ${item.settings.resolution==='720p'?'selected':''}>720p</option><option ${item.settings.resolution==='1080p'?'selected':''}>1080p</option><option ${item.settings.resolution==='4K'?'selected':''}>4K</option></select></label>`;
+      if(!controls) controls='<p class="text-slate-400">No advanced options required for this conversion profile.</p>';
+      els.modalControls.innerHTML=controls;
+      const q=document.getElementById('quality'); if(q) q.addEventListener('input',e=>document.getElementById('qualityValue').textContent=e.target.value+'%');
+      els.settingsModal.classList.remove('hidden'); els.settingsModal.classList.add('flex');
+    }
+
+    function closeSettings(){ els.settingsModal.classList.add('hidden'); els.settingsModal.classList.remove('flex'); currentSettingsId=null; }
+
+    function saveSettings(){
+      const item=queue.find(q=>q.id===currentSettingsId); if(!item) return;
+      const q=document.getElementById('quality'); const b=document.getElementById('bitrate'); const r=document.getElementById('resolution');
+      if(q) item.settings.quality=Number(q.value); if(b) item.settings.bitrate=b.value; if(r) item.settings.resolution=r.value;
+      closeSettings();
+    }
+
+    function simulateRow(item){
+      return new Promise(resolve=>{
+        if(!item.targets.length){ resolve(); return; }
+        item.status='processing'; item.progress=0; renderQueue();
+        const t=setInterval(()=>{
+          item.progress=Math.min(100,item.progress+Math.floor(Math.random()*16)+6);
+          if(item.progress>=100){ clearInterval(t); item.progress=100; item.status='ready'; renderQueue(); resolve(); }
+          else renderQueue();
+        }, 250 + Math.random()*300);
+      });
+    }
+
+    async function startBatch(){
+      await Promise.all(queue.filter(q=>q.status!=='ready').map(simulateRow));
+    }
+
+    els.dropzone.addEventListener('click',()=>els.fileInput.click());
+    ['dragenter','dragover'].forEach(evt=>els.dropzone.addEventListener(evt,e=>{e.preventDefault();els.dropzone.classList.add('ring-4','ring-emerald-500/40','bg-emerald-950/20','border-emerald-400/80');}));
+    ['dragleave','drop'].forEach(evt=>els.dropzone.addEventListener(evt,e=>{e.preventDefault();els.dropzone.classList.remove('ring-4','ring-emerald-500/40','bg-emerald-950/20','border-emerald-400/80');}));
+    els.dropzone.addEventListener('drop',e=>addFiles(e.dataTransfer.files));
+    els.fileInput.addEventListener('change',e=>addFiles(e.target.files));
+
+    els.queueBody.addEventListener('change',e=>{
+      const id=Number(e.target.dataset.target); if(!id) return;
+      const item=queue.find(q=>q.id===id); if(item){ item.selectedTarget=e.target.value; }
+    });
+
+    els.queueBody.addEventListener('click',e=>{
+      const settingsId=Number(e.target.dataset.settings); const removeId=Number(e.target.dataset.remove); const downloadId=Number(e.target.dataset.download);
+      if(settingsId) openSettings(settingsId);
+      if(removeId){ const idx=queue.findIndex(q=>q.id===removeId); if(idx>-1) queue.splice(idx,1); renderQueue(); }
+      if(downloadId){ alert(`Mock download for ${queue.find(q=>q.id===downloadId)?.file.name || 'file'}`); }
+    });
+
+    els.startBtn.addEventListener('click',startBatch);
+    els.clearBtn.addEventListener('click',()=>{queue.length=0; renderQueue();});
+    els.globalTarget.addEventListener('change',e=>{ if(e.target.value) applyGlobalTarget(e.target.value); });
+    els.closeModal.addEventListener('click',closeSettings);
+    els.saveSettings.addEventListener('click',saveSettings);
+    els.settingsModal.addEventListener('click',e=>{ if(e.target===els.settingsModal) closeSettings(); });
+
+    initGlobalTargets();
+  </script>
+</body>
+</html>
