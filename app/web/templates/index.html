@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en" class="h-full bg-slate-950">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Cinematic Voice SaaS</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .glass { background: rgba(15, 23, 42, 0.74); backdrop-filter: blur(18px); }
+    .range { accent-color: #a78bfa; }
+  </style>
+</head>
+<body class="min-h-full text-slate-100">
+  <main class="mx-auto flex min-h-screen w-full max-w-7xl flex-col gap-8 px-4 py-6 sm:px-6 lg:px-8">
+    <header class="flex flex-col gap-4 rounded-3xl border border-white/10 bg-[radial-gradient(circle_at_top_left,_rgba(124,58,237,.28),_transparent_34%),linear-gradient(135deg,_rgba(15,23,42,.96),_rgba(2,6,23,.98))] p-6 shadow-2xl shadow-violet-950/30 md:flex-row md:items-center md:justify-between">
+      <div>
+        <p class="text-sm font-semibold uppercase tracking-[0.35em] text-violet-300">StyleTTS 2 Studio</p>
+        <h1 class="mt-3 text-3xl font-black tracking-tight sm:text-5xl">Cinematic AI Voice Generation</h1>
+        <p class="mt-3 max-w-2xl text-slate-300">Clone a voice, shape the emotion, and stream polished narration through a CPU-optimized generation pipeline.</p>
+      </div>
+      <div class="rounded-2xl border border-emerald-400/30 bg-emerald-400/10 px-5 py-4 text-sm text-emerald-100">
+        <span class="block font-bold">CPU Ready</span>
+        Async Celery workers · DeepFilterNet polish · Streaming playback
+      </div>
+    </header>
+
+    <section class="grid gap-6 lg:grid-cols-[1.1fr_.9fr]">
+      <form id="generationForm" class="glass rounded-3xl border border-white/10 p-5 shadow-xl shadow-black/30">
+        <div class="mb-5 flex items-center justify-between gap-3">
+          <div>
+            <h2 class="text-xl font-bold">Generate narration</h2>
+            <p class="text-sm text-slate-400">ElevenLabs-inspired controls with pro-grade emotional direction.</p>
+          </div>
+          <span class="rounded-full bg-violet-500/15 px-3 py-1 text-xs font-semibold text-violet-200">Realtime Job</span>
+        </div>
+
+        <label class="block text-sm font-semibold text-slate-300" for="script">Script</label>
+        <textarea id="script" name="text" rows="9" required class="mt-2 w-full resize-none rounded-2xl border border-white/10 bg-slate-900/80 p-4 text-slate-100 outline-none ring-violet-500/40 transition focus:ring-4" placeholder="Paste a historical documentary script..."></textarea>
+
+        <div class="mt-5 grid gap-4 sm:grid-cols-3">
+          <label class="block text-sm font-semibold text-slate-300">Emotion
+            <select name="emotion" class="mt-2 w-full rounded-2xl border border-white/10 bg-slate-900 p-3 text-slate-100 outline-none focus:ring-4 focus:ring-violet-500/30">
+              <option value="dramatic">Dramatic</option>
+              <option value="deep">Deep</option>
+              <option value="whisper">Whisper</option>
+              <option value="neutral">Neutral</option>
+            </select>
+          </label>
+          <label class="block text-sm font-semibold text-slate-300">Emotional intensity
+            <input name="emotional_intensity" type="range" min="0" max="1" step="0.05" value="0.7" class="range mt-4 w-full" />
+          </label>
+          <label class="block text-sm font-semibold text-slate-300">Stability
+            <input name="stability" type="range" min="0" max="1" step="0.05" value="0.55" class="range mt-4 w-full" />
+          </label>
+        </div>
+
+        <input id="voiceId" name="voice_id" type="hidden" />
+        <button class="mt-6 w-full rounded-2xl bg-gradient-to-r from-violet-500 to-fuchsia-500 px-5 py-4 font-bold text-white shadow-lg shadow-violet-950/50 transition hover:scale-[1.01]" type="submit">Generate studio voice</button>
+      </form>
+
+      <aside class="space-y-6">
+        <div id="dropzone" class="glass flex min-h-64 cursor-pointer flex-col items-center justify-center rounded-3xl border border-dashed border-violet-300/40 p-6 text-center shadow-xl shadow-black/30 transition hover:border-violet-300 hover:bg-violet-500/10">
+          <div class="mb-4 rounded-3xl bg-violet-500/20 p-4 text-4xl">🎙️</div>
+          <h2 class="text-xl font-bold">Drag & drop voice sample</h2>
+          <p class="mt-2 text-sm text-slate-400">Upload 10-30 seconds of clean speech for zero-shot cloning.</p>
+          <input id="voiceUpload" type="file" accept="audio/*" class="hidden" />
+          <p id="voiceStatus" class="mt-4 text-sm font-semibold text-violet-200">No voice selected</p>
+        </div>
+
+        <div class="glass rounded-3xl border border-white/10 p-5 shadow-xl shadow-black/30">
+          <h2 class="text-xl font-bold">Generation status</h2>
+          <div class="mt-4 h-3 overflow-hidden rounded-full bg-slate-800">
+            <div id="progressBar" class="h-full w-0 rounded-full bg-gradient-to-r from-emerald-400 to-violet-400 transition-all"></div>
+          </div>
+          <p id="progressText" class="mt-3 text-sm text-slate-400">Idle</p>
+          <audio id="player" controls class="mt-4 hidden w-full"></audio>
+        </div>
+      </aside>
+    </section>
+
+    <section class="glass rounded-3xl border border-white/10 p-5 shadow-xl shadow-black/30">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-xl font-bold">Audio library</h2>
+          <p class="text-sm text-slate-400">Generated files are stored locally for this scaffold.</p>
+        </div>
+      </div>
+      <div id="library" class="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+        {% for asset in assets %}
+        <article class="rounded-2xl border border-white/10 bg-slate-900/70 p-4">
+          <p class="font-semibold">{{ asset.title }}</p>
+          <p class="text-xs text-slate-500">{{ asset.created_at }}</p>
+          <audio controls src="/api/audio/{{ asset.id }}/stream" class="mt-3 w-full"></audio>
+        </article>
+        {% else %}
+        <p class="text-sm text-slate-400">Your generated voices will appear here.</p>
+        {% endfor %}
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const dropzone = document.getElementById('dropzone');
+    const voiceUpload = document.getElementById('voiceUpload');
+    const voiceStatus = document.getElementById('voiceStatus');
+    const voiceId = document.getElementById('voiceId');
+    const form = document.getElementById('generationForm');
+    const progressBar = document.getElementById('progressBar');
+    const progressText = document.getElementById('progressText');
+    const player = document.getElementById('player');
+
+    dropzone.addEventListener('click', () => voiceUpload.click());
+    dropzone.addEventListener('dragover', event => { event.preventDefault(); dropzone.classList.add('border-violet-200'); });
+    dropzone.addEventListener('dragleave', () => dropzone.classList.remove('border-violet-200'));
+    dropzone.addEventListener('drop', event => { event.preventDefault(); uploadVoice(event.dataTransfer.files[0]); });
+    voiceUpload.addEventListener('change', event => uploadVoice(event.target.files[0]));
+
+    async function uploadVoice(file) {
+      if (!file) return;
+      voiceStatus.textContent = `Uploading ${file.name}...`;
+      const data = new FormData();
+      data.append('file', file);
+      const response = await fetch('/api/voices', { method: 'POST', body: data });
+      const payload = await response.json();
+      voiceId.value = payload.voice_id;
+      voiceStatus.textContent = `Voice ready: ${payload.voice_id.slice(0, 8)}`;
+    }
+
+    form.addEventListener('submit', async event => {
+      event.preventDefault();
+      const response = await fetch('/api/generate', { method: 'POST', body: new FormData(form) });
+      const payload = await response.json();
+      pollJob(payload.job_id);
+    });
+
+    async function pollJob(jobId) {
+      progressText.textContent = 'Queued...';
+      const interval = setInterval(async () => {
+        const response = await fetch(`/api/jobs/${jobId}`);
+        const status = await response.json();
+        progressBar.style.width = `${status.percent || 8}%`;
+        progressText.textContent = `${status.state}: ${status.stage || 'working'}`;
+        if (status.state === 'SUCCESS') {
+          clearInterval(interval);
+          player.src = `/api/audio/${status.audio_id}/stream`;
+          player.classList.remove('hidden');
+          player.play().catch(() => {});
+        }
+      }, 1000);
+    }
+  </script>
+</body>
+</html>
