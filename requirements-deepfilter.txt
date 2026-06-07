@@ -1,0 +1,5 @@
+# Optional DeepFilterNet add-on.
+# DeepFilterNet 0.5.x currently expects NumPy 1.x, so use a dedicated venv if
+# other tools such as Kokoro require NumPy 2.x.
+deepfilternet>=0.5.6,<0.6
+numpy>=1.26.4,<2.0

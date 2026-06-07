@@ -1,0 +1,13 @@
+# Install inside a fresh virtual environment to avoid pip downgrading unrelated
+# packages such as Gradio/Kokoro. Torch and DeepFilterNet-specific pins are
+# intentionally optional; install add-on requirement files only when needed.
+fastapi>=0.115.6,<1.0
+uvicorn[standard]>=0.34.0,<1.0
+celery>=5.4.0,<6.0
+redis>=5.2.1,<6.0
+python-multipart>=0.0.20,<1.0
+pydantic-settings>=2.7.1,<3.0
+aiofiles>=24.1.0,<25.0
+numpy>=1.26.4
+soundfile>=0.12.1,<0.14
+jinja2>=3.1.5,<4.0
