@@ -16,4 +16,6 @@ celery_app.conf.update(
     worker_prefetch_multiplier=1,
     task_acks_late=True,
     result_expires=60 * 60 * 24,
+    task_always_eager=settings.celery_task_always_eager,
+    task_store_eager_result=True,
 )

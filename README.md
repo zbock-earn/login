@@ -109,19 +109,78 @@ Target hardware can be CPU-only, including older 4-core processors, if the platf
 
 ## Local Development
 
+### 1. Create an isolated Python environment
+
+Use a virtual environment. Do not install into a global Python that already has Gradio, DeepFilterNet, or other AI tools installed, because pip may downgrade unrelated packages.
+
+**Windows CMD:**
+
+```bat
+python -m venv .venv
+.venv\Scripts\activate
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+copy .env.example .env
+```
+
+**Linux/macOS:**
+
 ```bash
 python -m venv .venv
 source .venv/bin/activate
+python -m pip install --upgrade pip
 pip install -r requirements.txt
 cp .env.example .env
-uvicorn app.main:app --reload
 ```
 
-In another terminal:
+The requirements intentionally keep `numpy<2.0` so DeepFilterNet 0.5.x remains compatible.
+
+### 2. Start Redis
+
+Celery needs Redis for non-blocking background generation. On Windows, the easiest option is Docker Desktop:
+
+```bat
+docker run --name voice-redis -p 6379:6379 -d redis:7
+```
+
+If you do not want Redis for a quick UI-only demo, set `CELERY_TASK_ALWAYS_EAGER=true` in `.env`. That mode runs generation in the API process and is not recommended for production.
+
+### 3. Start the FastAPI web server
+
+Run this from the repository root:
+
+```bat
+python -m uvicorn app.main:app --reload
+```
+
+Then open `http://127.0.0.1:8000`.
+
+You can also run the script directly. Both of these work after this fix:
+
+```bat
+python app\main.py
+cd app && python main.py
+```
+
+### 4. Start the Celery worker
+
+Open a second terminal, activate the same virtual environment, and run the worker from the repository root.
+
+**Windows CMD:**
+
+```bat
+.venv\Scripts\activate
+celery -A app.tasks.celery_app.celery_app worker --loglevel=info --pool=solo --concurrency=1
+```
+
+**Linux/macOS:**
 
 ```bash
+source .venv/bin/activate
 celery -A app.tasks.celery_app.celery_app worker --loglevel=info --concurrency=1
 ```
+
+The Windows command uses `--pool=solo` because Celery's default prefork pool is not reliable on native Windows.
 
 ## Production Notes
 

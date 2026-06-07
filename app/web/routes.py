@@ -16,7 +16,7 @@ from app.tasks.celery_app import celery_app
 from app.tasks.generation import generate_voice
 
 router = APIRouter()
-templates = Jinja2Templates(directory="app/web/templates")
+templates = Jinja2Templates(directory=Path(__file__).resolve().parent / "templates")
 
 
 @router.get("/", response_class=HTMLResponse)
