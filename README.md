@@ -17,6 +17,8 @@ A production-ready scaffold for a high-performance AI Voice Generation SaaS plat
 .
 ├── README.md
 ├── requirements.txt
+├── requirements-ml.txt
+├── requirements-deepfilter.txt
 ├── .env.example
 ├── app
 │   ├── __init__.py
@@ -31,6 +33,7 @@ A production-ready scaffold for a high-performance AI Voice Generation SaaS plat
 │   ├── services
 │   │   ├── __init__.py
 │   │   ├── audio_library.py
+│   │   ├── local_jobs.py
 │   │   ├── postprocess.py
 │   │   ├── streaming.py
 │   │   └── tts_engine.py
@@ -56,13 +59,14 @@ A production-ready scaffold for a high-performance AI Voice Generation SaaS plat
 Browser UI
   ├─ Upload reference voice        -> FastAPI /api/voices
   ├─ Submit generation request     -> FastAPI /api/generate
+  ├─ Default local background job   -> in-process worker thread
   ├─ Listen to progress            -> WebSocket /ws/jobs/{job_id}
   └─ Stream generated audio        -> FastAPI /api/audio/{audio_id}/stream
 
 FastAPI API Process
   ├─ Validates user input
   ├─ Stores voice references and metadata
-  ├─ Enqueues Celery jobs in Redis
+  ├─ Enqueues local demo jobs or Celery jobs in Redis
   └─ Serves responsive HTML/Tailwind UI
 
 Celery Worker Process
@@ -133,17 +137,17 @@ pip install -r requirements.txt
 cp .env.example .env
 ```
 
-The requirements intentionally keep `numpy<2.0` so DeepFilterNet 0.5.x remains compatible.
+The base requirements do not force a NumPy downgrade and do not install Torch, so a global environment with Kokoro or other TTS tools is less likely to be disrupted. The included demo engine can create placeholder WAV output without downloading a 200 MB+ Torch wheel. Install `requirements-ml.txt` only for real StyleTTS2 integration, and use `requirements-deepfilter.txt` in a dedicated environment when enabling DeepFilterNet 0.5.x because that add-on expects NumPy 1.x.
 
 ### 2. Start Redis
 
-Celery needs Redis for non-blocking background generation. On Windows, the easiest option is Docker Desktop:
+The app now works without Redis by default using `BACKGROUND_BACKEND=local`, so pressing **Generate studio voice** immediately creates a demo WAV file with the placeholder TTS engine. Use Redis when you want production-style Celery workers. On Windows, the easiest Redis option is Docker Desktop:
 
 ```bat
 docker run --name voice-redis -p 6379:6379 -d redis:7
 ```
 
-If you do not want Redis for a quick UI-only demo, set `CELERY_TASK_ALWAYS_EAGER=true` in `.env`. That mode runs generation in the API process and is not recommended for production.
+For production-style async workers, set `BACKGROUND_BACKEND=celery` in `.env`, keep `REDIS_URL=redis://localhost:6379/0`, and start the Celery worker below. If Redis is unavailable while `BACKGROUND_BACKEND=celery`, the API falls back to the local in-process runner so the UI still generates audio.
 
 ### 3. Start the FastAPI web server
 
@@ -162,9 +166,9 @@ python app\main.py
 cd app && python main.py
 ```
 
-### 4. Start the Celery worker
+### 4. Optional: start the Celery worker
 
-Open a second terminal, activate the same virtual environment, and run the worker from the repository root.
+Skip this section for the default local demo mode. For production-style Celery mode, set `BACKGROUND_BACKEND=celery` in `.env`, open a second terminal, activate the same virtual environment, and run the worker from the repository root.
 
 **Windows CMD:**
 
@@ -181,6 +185,12 @@ celery -A app.tasks.celery_app.celery_app worker --loglevel=info --concurrency=1
 ```
 
 The Windows command uses `--pool=solo` because Celery's default prefork pool is not reliable on native Windows.
+
+### Troubleshooting
+
+- If the page loads but Generate does nothing, check `/api/jobs/{job_id}` in the browser developer network tab. The default `BACKGROUND_BACKEND=local` should not require Redis.
+- If you see Redis retry logs, either start Redis or change `.env` back to `BACKGROUND_BACKEND=local`, then restart Uvicorn.
+- Use a fresh virtual environment. Installing every AI tool into one global Python can still create conflicts, such as Kokoro requiring NumPy 2.x while DeepFilterNet 0.5.x expects NumPy 1.x. The base demo no longer installs Torch or DeepFilterNet-specific pins; install `requirements-ml.txt` and `requirements-deepfilter.txt` only when you are ready to wire those engines.
 
 ## Production Notes
 

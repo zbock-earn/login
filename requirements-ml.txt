@@ -1,0 +1,4 @@
+# Optional heavyweight ML dependencies for real StyleTTS2 integration.
+# The scaffold demo can generate placeholder WAV files without these packages.
+# Choose versions that match your StyleTTS2 checkout and CPU/GPU target.
+torch>=2.5.0

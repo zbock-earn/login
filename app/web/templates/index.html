@@ -55,7 +55,7 @@
         </div>
 
         <input id="voiceId" name="voice_id" type="hidden" />
-        <button class="mt-6 w-full rounded-2xl bg-gradient-to-r from-violet-500 to-fuchsia-500 px-5 py-4 font-bold text-white shadow-lg shadow-violet-950/50 transition hover:scale-[1.01]" type="submit">Generate studio voice</button>
+        <button id="generateButton" class="mt-6 w-full rounded-2xl bg-gradient-to-r from-violet-500 to-fuchsia-500 px-5 py-4 font-bold text-white shadow-lg shadow-violet-950/50 transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-60" type="submit">Generate studio voice</button>
       </form>
 
       <aside class="space-y-6">
@@ -108,6 +108,7 @@
     const progressBar = document.getElementById('progressBar');
     const progressText = document.getElementById('progressText');
     const player = document.getElementById('player');
+    const generateButton = document.getElementById('generateButton');
 
     dropzone.addEventListener('click', () => voiceUpload.click());
     dropzone.addEventListener('dragover', event => { event.preventDefault(); dropzone.classList.add('border-violet-200'); });
@@ -128,8 +129,16 @@
 
     form.addEventListener('submit', async event => {
       event.preventDefault();
+      generateButton.disabled = true;
+      progressBar.style.width = '5%';
+      progressText.textContent = 'Submitting generation job...';
       const response = await fetch('/api/generate', { method: 'POST', body: new FormData(form) });
       const payload = await response.json();
+      if (!response.ok) {
+        generateButton.disabled = false;
+        progressText.textContent = payload.detail || 'Unable to start generation.';
+        return;
+      }
       pollJob(payload.job_id);
     });
 
@@ -142,9 +151,17 @@
         progressText.textContent = `${status.state}: ${status.stage || 'working'}`;
         if (status.state === 'SUCCESS') {
           clearInterval(interval);
+          generateButton.disabled = false;
+          progressBar.style.width = '100%';
+          progressText.textContent = 'SUCCESS: audio ready';
           player.src = `/api/audio/${status.audio_id}/stream`;
           player.classList.remove('hidden');
           player.play().catch(() => {});
+        }
+        if (status.state === 'FAILURE') {
+          clearInterval(interval);
+          generateButton.disabled = false;
+          progressText.textContent = `FAILED: ${status.error || 'generation error'}`;
         }
       }, 1000);
     }

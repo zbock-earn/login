@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     cpu_threads: int = Field(default=4, ge=1, le=64)
     max_upload_mb: int = Field(default=50, ge=1, le=500)
     celery_task_always_eager: bool = False
+    background_backend: str = "local"
 
     @property
     def generated_dir(self) -> Path:
