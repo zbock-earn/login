@@ -54,7 +54,11 @@ def _status_for_job(job_id: str) -> dict:
 
 @router.get("/", response_class=HTMLResponse)
 def index(request: Request) -> HTMLResponse:
-    return templates.TemplateResponse("index.html", {"request": request, "assets": AudioLibrary().list_assets()})
+    return templates.TemplateResponse(
+        request=request,
+        name="index.html",
+        context={"assets": AudioLibrary().list_assets()},
+    )
 
 
 @router.get("/favicon.ico")

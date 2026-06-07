@@ -188,6 +188,7 @@ The Windows command uses `--pool=solo` because Celery's default prefork pool is 
 
 ### Troubleshooting
 
+- If the home page returns `500 Internal Server Error` with `TypeError: unhashable type: 'dict'`, update to this revision. The route now uses the Starlette-compatible keyword form of `TemplateResponse`.
 - If the page loads but Generate does nothing, check `/api/jobs/{job_id}` in the browser developer network tab. The default `BACKGROUND_BACKEND=local` should not require Redis.
 - If you see Redis retry logs, either start Redis or change `.env` back to `BACKGROUND_BACKEND=local`, then restart Uvicorn.
 - Use a fresh virtual environment. Installing every AI tool into one global Python can still create conflicts, such as Kokoro requiring NumPy 2.x while DeepFilterNet 0.5.x expects NumPy 1.x. The base demo no longer installs Torch or DeepFilterNet-specific pins; install `requirements-ml.txt` and `requirements-deepfilter.txt` only when you are ready to wire those engines.
