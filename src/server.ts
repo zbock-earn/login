@@ -18,6 +18,14 @@ registerSocketServer(io);
 app.use(helmet());
 app.use(cors({ origin: process.env.CORS_ORIGIN?.split(',') ?? '*' }));
 app.use(express.json({ limit: '5mb' }));
+app.get('/', (_req, res) => res.type('html').send(`<!doctype html>
+<html lang="en">
+  <head><meta charset="utf-8"><title>WhatsApp SaaS API</title></head>
+  <body>
+    <h1>WhatsApp SaaS API is running</h1>
+    <p>Use <code>/healthz</code> for health checks and <code>/api</code> for tenant-scoped API routes.</p>
+  </body>
+</html>`));
 app.use('/api', buildRoutes(manager));
 app.get('/healthz', (_req, res) => res.json({ ok: true }));
 

@@ -42,3 +42,27 @@ await socket.sendMessage(jid, {
   ptt: true,
 });
 ```
+
+## Local browser check
+
+If you open `http://localhost:3000/` in a browser, the API now returns a small status page instead of Express' default `Cannot GET /` response. Use `http://localhost:3000/healthz` for machine health checks.
+
+## Voice transform and send
+
+The primary voice endpoint is now `POST /api/voice/transform`. It accepts multipart field `audio` and a `voiceProfile` query parameter. To only transform and download:
+
+```bash
+curl -X POST "http://localhost:3000/api/voice/transform?voiceProfile=chipmunk" \
+  -H "x-user-id: USER_ID" \
+  -F "audio=@./sample.mp3" \
+  --output transformed.ogg
+```
+
+To transform and dispatch with Baileys through a connected account:
+
+```bash
+curl -X POST "http://localhost:3000/api/voice/transform?voiceProfile=robot&send=true&accountId=ACCOUNT_ID&jid=PHONE@s.whatsapp.net" \
+  -H "x-user-id: USER_ID" \
+  -F "audio=@./sample.mp3" \
+  --output transformed.ogg
+```

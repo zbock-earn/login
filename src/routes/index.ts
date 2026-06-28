@@ -6,7 +6,7 @@ import type { BaileysManager } from '../services/baileysManager.js';
 import { requireTenant } from '../middleware/tenant.js';
 import { sessionController } from '../controllers/sessionController.js';
 import { listMessages } from '../controllers/messageController.js';
-import { transformVoiceController } from '../controllers/voiceController.js';
+import { buildVoiceRoutes } from './voice.routes.js';
 
 export function buildRoutes(manager: BaileysManager) {
   const router = Router();
@@ -22,7 +22,11 @@ export function buildRoutes(manager: BaileysManager) {
   router.post('/sessions', sessions.create);
   router.post('/sessions/:accountId/connect', sessions.connect);
   router.get('/accounts/:accountId/messages', listMessages);
-  router.post('/voice/transform', upload.single('audio'), transformVoiceController);
+  router.use('/voice', buildVoiceRoutes(manager));
+  router.post('/voice/transform-file-only', upload.single('audio'), async (req, res, next) => {
+    const { transformVoiceController } = await import('../controllers/voiceController.js');
+    return transformVoiceController(req, res).catch(next);
+  });
 
   return router;
 }
