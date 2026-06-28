@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>WhatsApp SaaS Dashboard</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div id="app" class="app-shell">
+      <aside class="tenant-rail">
+        <div class="brand-lockup">
+          <div class="brand-mark">W</div>
+          <div>
+            <strong>WA SaaS</strong>
+            <span>Multi-tenant console</span>
+          </div>
+        </div>
+
+        <label class="field-label" for="tenantId">Tenant userId</label>
+        <div class="tenant-input-row">
+          <input id="tenantId" type="text" placeholder="Paste Prisma User.id" autocomplete="off" />
+          <button id="saveTenant" class="icon-button" title="Save tenant">✓</button>
+        </div>
+
+        <section class="panel-card compact-plan-card">
+          <span class="eyebrow">Current plan</span>
+          <strong>Enterprise Trial</strong>
+          <small>Session routing, anti-delete, call automation, voice studio</small>
+        </section>
+
+        <div class="section-heading">
+          <span>Accounts</span>
+          <button id="newAccount" class="text-button">+ New</button>
+        </div>
+        <div id="accountList" class="account-list"></div>
+      </aside>
+
+      <main class="dashboard-grid">
+        <section class="chat-list-column">
+          <header class="top-toolbar">
+            <div>
+              <h1>Chats</h1>
+              <p id="connectionSummary">Select or create an account</p>
+            </div>
+            <button id="refreshSessions" class="icon-button">↻</button>
+          </header>
+
+          <div id="qrCard" class="qr-card hidden">
+            <div>
+              <strong>Scan dynamic QR</strong>
+              <p>Open WhatsApp on your phone and link this business device.</p>
+            </div>
+            <img id="qrImage" alt="WhatsApp login QR" />
+          </div>
+
+          <div class="search-box">
+            <span>⌕</span>
+            <input id="chatSearch" placeholder="Search or start a new chat" />
+          </div>
+
+          <div id="chatList" class="chat-list"></div>
+        </section>
+
+        <section class="conversation-column">
+          <header class="conversation-header">
+            <div class="avatar large" id="activeChatAvatar">?</div>
+            <div>
+              <h2 id="activeChatTitle">No chat selected</h2>
+              <p id="activeChatMeta">Messages stream from Baileys in real time</p>
+            </div>
+            <div class="conversation-actions">
+              <button class="icon-button" title="Search">⌕</button>
+              <button class="icon-button" title="More">⋮</button>
+            </div>
+          </header>
+
+          <div id="systemAlerts" class="system-alerts"></div>
+          <div id="messagePane" class="message-pane empty-state">
+            <div>
+              <div class="empty-icon">💬</div>
+              <h2>WhatsApp Web-style dashboard</h2>
+              <p>Create/connect an account, scan QR, then messages and deleted-by-sender alerts appear here.</p>
+            </div>
+          </div>
+
+          <form id="composer" class="composer">
+            <button type="button" class="icon-button">😊</button>
+            <button type="button" class="icon-button">📎</button>
+            <input id="composerInput" placeholder="Type a message" disabled />
+            <button type="submit" class="send-button" disabled>Send</button>
+          </form>
+        </section>
+
+        <aside class="details-column">
+          <section class="panel-card profile-card">
+            <div class="avatar xlarge" id="detailsAvatar">WA</div>
+            <h2 id="detailsTitle">Business Account</h2>
+            <p id="detailsSubtitle">No account connected yet</p>
+          </section>
+
+          <section class="panel-card">
+            <div class="section-heading inline">
+              <span>Voice studio</span>
+              <span class="status-pill">OGG/Opus</span>
+            </div>
+            <label class="field-label" for="voiceProfile">Profile</label>
+            <select id="voiceProfile">
+              <option value="baby">Baby</option>
+              <option value="girl">Girl</option>
+              <option value="boy">Boy</option>
+              <option value="deep_man">Deep man</option>
+              <option value="helium">Helium</option>
+              <option value="robot">Robot</option>
+              <option value="monster">Monster</option>
+              <option value="radio">Radio</option>
+              <option value="echo">Echo</option>
+              <option value="underwater">Underwater</option>
+              <option value="chipmunk">Chipmunk</option>
+            </select>
+            <input id="voiceFile" type="file" accept="audio/*" />
+            <button id="transformVoice" class="primary-button">Transform audio</button>
+            <audio id="voicePreview" controls class="hidden"></audio>
+          </section>
+
+          <section class="panel-card">
+            <div class="section-heading inline">
+              <span>Automation</span>
+              <span class="status-pill danger">Calls</span>
+            </div>
+            <p class="muted-copy">Incoming voice/video call offers are logged, surfaced in real time, and can be auto-rejected by the backend account policy.</p>
+          </section>
+
+          <section class="panel-card">
+            <div class="section-heading inline">
+              <span>Retention</span>
+              <span class="status-pill">Zero-loss</span>
+            </div>
+            <p class="muted-copy">Delete-for-everyone events only mark <code>isDeletedBySender</code>; the dashboard continues rendering the retained message body.</p>
+          </section>
+        </aside>
+      </main>
+    </div>
+    <script src="/socket.io/socket.io.js"></script>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

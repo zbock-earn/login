@@ -66,3 +66,14 @@ curl -X POST "http://localhost:3000/api/voice/transform?voiceProfile=robot&send=
   -F "audio=@./sample.mp3" \
   --output transformed.ogg
 ```
+
+## Dashboard frontend
+
+The repository includes a no-build static dashboard served by Express from `public/`.
+
+- Open `http://localhost:3000/` to use the WhatsApp Web-style SaaS dashboard.
+- Paste an existing Prisma `User.id` into the tenant field.
+- Create or select a WhatsApp account to receive QR status and live Socket.io events.
+- Use the chat list, message pane, anti-delete badges, incoming call alerts, and voice studio directly from the browser.
+
+The implementation is intentionally static HTML/CSS/JavaScript so it can run with the existing backend process without adding a separate frontend bundler.
