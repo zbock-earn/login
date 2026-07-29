@@ -2,6 +2,7 @@
 from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
+import os
 
 ROOT = Path(__file__).resolve().parent
 OUTPUT_DIR = ROOT / "outputs"
@@ -15,7 +16,7 @@ for path in (OUTPUT_DIR, CACHE_DIR, MODEL_DIR, ASSET_DIR):
 class ModelSettings:
     """CosyVoice2 model and runtime configuration."""
     repo_id: str = "iic/CosyVoice2-0.5B"
-    local_dir: Path = MODEL_DIR / "CosyVoice2-0.5B"
+    local_dir: Path = Path(os.environ.get("COSYVOICE2_MODEL_DIR", str(MODEL_DIR / "CosyVoice2-0.5B")))
     sample_rate: int = 24000
     fp16: bool = True
     jit: bool = False
