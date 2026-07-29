@@ -1,0 +1,8 @@
+__pycache__/
+*.py[cod]
+CosyVoice2_Ultra/models/*
+!CosyVoice2_Ultra/models/.gitkeep
+CosyVoice2_Ultra/outputs/*
+!CosyVoice2_Ultra/outputs/.gitkeep
+CosyVoice2_Ultra/cache/*
+!CosyVoice2_Ultra/cache/.gitkeep
