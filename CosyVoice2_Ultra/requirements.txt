@@ -1,0 +1,13 @@
+torch>=2.1
+torchaudio>=2.1
+gradio>=4.44
+huggingface_hub>=0.23
+modelscope>=1.17
+librosa>=0.10
+soundfile>=0.12
+pydub>=0.25
+psutil>=5.9
+num2words>=0.5
+numpy>=1.24
+scipy>=1.10
+rich>=13.0
