@@ -22,3 +22,7 @@ cd CosyVoice2_Ultra
 python -m pip install -r requirements.txt
 python app.py
 ```
+
+## Recent production hardening
+
+This revision adds a local voice library, generation history, and a naturalness engine. The naturalness engine does not use any external TTS provider; it combines CosyVoice2 prompt guidance with punctuation-aware pauses and optional low-level breath beds so long narrations feel less robotic while remaining fully local.

@@ -12,6 +12,8 @@ from reference_analyzer import rank_references
 from audio_mastering import master_audio, write_audio
 from diagnostics import audio_metrics
 from runtime_optimizer import configure_runtime
+from naturalness_engine import NaturalnessProfile, join_with_natural_pauses
+from job_manager import append_record
 
 class CosyVoice2Engine:
     """Lazy-loaded CosyVoice2 engine for Gradio and notebooks."""
@@ -96,8 +98,14 @@ class CosyVoice2Engine:
                 for index, chunk in enumerate(prep.chunks, start=1):
                     print(f"Generating chunk {index}/{len(prep.chunks)} ({len(chunk)} chars)")
                     pieces.append(self._infer_with_retry(chunk, prompt_text, chosen.path, params))
-                pause = np.zeros(int(self.sample_rate * 0.10), dtype=np.float32)
-                audio = np.concatenate([part for piece in pieces for part in (piece, pause)]) if pieces else np.zeros(1, dtype=np.float32)
+                profile = NaturalnessProfile(
+                    breath_level=float(params.get("breath_level", 0.018)),
+                    breath_probability=float(params.get("breath_probability", 0.35)),
+                    comma_pause_ms=int(params.get("comma_pause_ms", 120)),
+                    sentence_pause_ms=int(params.get("sentence_pause_ms", 260)),
+                    paragraph_pause_ms=int(params.get("paragraph_pause_ms", 420)),
+                )
+                audio = join_with_natural_pauses(pieces, prep.chunks, self.sample_rate, profile, int(params.get("seed", 42)))
                 audio = master_audio(audio, self.sample_rate, bool(params.get("normalize", True)), bool(params.get("remove_silence", True)), noise_reduction=bool(params.get("noise_reduction", False)))
                 out = OUTPUT_DIR / f"cosyvoice2_ultra_{int(time.time())}.wav"
                 write_audio(out, audio, self.sample_rate)
@@ -112,9 +120,11 @@ class CosyVoice2Engine:
                 "GPU Used": self.optimization.gpu_name,
                 "VRAM Used": metrics.get("VRAM Used", "see telemetry"),
             })
+            append_record(text, str(out), "success", metrics)
             cleanup_memory()
             return str(out), metrics, "Generation completed successfully."
         except Exception as exc:
+            append_record(text if "text" in locals() else "", "", "error", {"Error": str(exc)})
             cleanup_memory()
             return "", {"Error": str(exc)}, f"Friendly error: {exc}"
 
